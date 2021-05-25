@@ -5,6 +5,8 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "vite --mode development",
+    "start:prod": "vite --mode production",
     "dev": "node scripts/dev.js",
     "build": "node scripts/build.js",
     "size": "node scripts/build.js vue runtime-dom size-check -p -f global",

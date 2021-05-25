@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "dist",
-    "sourceMap": false,
+    "sourceMap": true,
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
@@ -20,7 +20,15 @@
     "paths": {
       "@vue/compat": ["packages/vue-compat/src"],
       "@vue/*": ["packages/*/src"],
-      "vue": ["packages/vue/src"]
+      "vue": ["packages/vue/src"],
+      "@src/*": ["src/*"],
+      "@pages/*": ["src/pages/*"],
+      "@route/*": ["src/route/*"],
+      "@components/*": ["src/components/*"],
+      "@assets/*": ["src/assets/*"],
+      "@models/*": ["src/models/*"],
+      "@themes/*": ["src/themes/*"],
+      "@utils/*": ["src/utils/*"],
     }
   },
   "include": [
@@ -28,6 +36,8 @@
     "packages/*/src",
     "packages/runtime-dom/types/jsx.d.ts",
     "packages/*/__tests__",
-    "test-dts"
+    "test-dts",
+    "src",
+    "packages/shim.d.ts",
   ]
 }
