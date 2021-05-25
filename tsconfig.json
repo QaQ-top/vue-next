@@ -38,6 +38,6 @@
     "packages/*/__tests__",
     "test-dts",
     "src",
-    "packages/shim.d.ts",
+    "src/shim.d.ts",
   ]
 }

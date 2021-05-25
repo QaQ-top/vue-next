@@ -16,9 +16,9 @@ export default defineConfig({
     '@utils': resolve(__dirname, 'src/utils'),
     '@components': resolve(__dirname, 'src/components')
   },
-  // define: {
-  //   __GLOBAL__: `全局变量`
-  // },
+  define: {
+    __GLOBAL__: JSON.stringify('全局变量')
+  },
   plugins: [vue()],
   esbuild: {
     target: 'es2020'

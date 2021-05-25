@@ -12,3 +12,9 @@ declare module '*.wasm' {
 }
 
 declare const Global: string
+
+interface ImportMeta {
+  env: {
+    [key: string]: any
+  }
+}
