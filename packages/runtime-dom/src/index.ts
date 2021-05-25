@@ -54,8 +54,9 @@ export const hydrate = ((...args) => {
 }) as RootHydrateFunction
 
 export const createApp = ((...args) => {
+  // console.log(args, "FFFFFFFFFFFFFFFFFFFF");
   const app = ensureRenderer().createApp(...args)
-
+  // console.log(app)
   if (__DEV__) {
     injectNativeTagCheck(app)
     injectCompilerOptionsCheck(app)
