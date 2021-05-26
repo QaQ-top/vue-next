@@ -1,43 +1,56 @@
 <template>
-  <div>
-    Vue {{count}} {{ss}}
-  </div>
-  <button @click="() => ss++" class="bg">
-    +++
-  </button>
-  <input type="range" v-model="r" min="0" max="255" />
-  <input type="range" v-model="g" min="0" max="255" />
-  <input type="range" v-model="b" min="0" max="255" />
-  <template v-for="(item, index) in 'abcdefg'" :key="index">
-    <br />
-    {{item}}
-  </template>
+  <main>
+    <div>Vue {{ count }} {{ num }}</div>
+    <button @click="() => {
+      count++;
+      backgroundColor = backgroundColor == 255 ? 0 : 255;
+    }" class="bg">+++</button>
+    <template v-for="(item, index) in iter" :key="index">
+      <br />
+      {{ item }} - {{ index }}
+    </template>
+  </main>
 </template>
 
-<script lang="ts" setup>
-import { ref, defineProps, reactive, watchEffect } from 'vue';
+<script lang="ts">
+import { ref, defineComponent, computed } from 'vue'
 
-const props = defineProps({
-  num: {
-    type: String,
-    default: 99,
-  }
+export default defineComponent({
+  name: 'App',
+  props: {
+    num: {
+      type: String,
+      default: "99",
+    },
+  },
+  setup() {
+    const count = ref(0);
+    const backgroundColor = ref(0);
+
+    return {
+      count,
+      backgroundColor,
+      iter: [...'abcdefg'],
+      fontColor: computed(() => Math.abs(backgroundColor.value - 255)),
+    }
+  },
 })
-
-const count = ref(0);
-const r = ref(0);
-const g = ref(0);
-const b = ref(0);
-
-ref: ss = 145;
-
-
 </script>
 
 <style>
+main {
+  min-height: 100vh;
+  background-color: rgb(v-bind(backgroundColor), v-bind(backgroundColor), v-bind(backgroundColor));
+  color: rgb(v-bind(fontColor), v-bind(fontColor), v-bind(fontColor));
+}
 .bg {
-  width: 100px;
-  height: 100px;
-  background-color: rgb(v-bind(r), v-bind(g) , v-bind(b) );
+  width: 75px;
+  height: 35px;
+  border-radius: 4px;
+  border: none;
+  transition: all 0.2s;
+}
+.bg:active {
+  outline-width: 4px;
 }
 </style>
