@@ -192,15 +192,16 @@ function createInvoker(
      * 当前事件触发的时间戳
      */
     const timeStamp = e.timeStamp || _getNow()
-
+    console.log(e, 'Event')
     /**
      * 触发时的时间戳 对比 事件初次添加时的时间戳
      */
     if (skipTimestampCheck || timeStamp >= invoker.attached - 1) {
+      // 事件对象内部 发生错误 将被传递 到 app.config.errorHandler
       callWithAsyncErrorHandling(
         patchStopImmediatePropagation(e, invoker.value),
         instance,
-        ErrorCodes.NATIVE_EVENT_HANDLER, // 5 : native event handler
+        ErrorCodes.NATIVE_EVENT_HANDLER, // 错误类型 5 : native event handler
         [e]
       )
     }

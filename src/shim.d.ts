@@ -11,7 +11,7 @@ declare module '*.wasm' {
   export default wasm
 }
 
-declare const Global: string
+declare const __VITE__GLOBAL__: string
 
 interface ImportMeta {
   env: {

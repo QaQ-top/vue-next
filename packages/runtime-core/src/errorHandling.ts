@@ -60,7 +60,7 @@ export type ErrorTypes = LifecycleHooks | ErrorCodes
 
 /**
  * 在 try catch 内调用 外部传入函数
- * 如果 fn 是 Promise 这里是无法不会的
+ * 如果 fn 是 Promise 这里是无法捕获的
  */
 export function callWithErrorHandling(
   fn: Function,
@@ -110,6 +110,13 @@ export function callWithAsyncErrorHandling(
   return values
 }
 
+/**
+ * @description 监控到 函数 或者 一组函数 调用时内部错误 为函数添加具有异步错误处理的功能
+ * @param {unknown} err 函数 函数组 (会在函数内部调用)
+ * @param {(ComponentInternalInstance | null)} instance 函数调用 所在的组件
+ * @param {ErrorTypes} type  错误类型
+ * @param {boolean} throwInDev
+ */
 export function handleError(
   err: unknown,
   instance: ComponentInternalInstance | null,
@@ -118,36 +125,53 @@ export function handleError(
 ) {
   const contextVNode = instance ? instance.vnode : null
   if (instance) {
+    /**
+     * 父组件实例
+     */
     let cur = instance.parent
     // the exposed instance is the render proxy to keep it consistent with 2.x
+    /**
+     * 暴露的实例(组件可以通过 this 访问到) 渲染代理
+     */
     const exposedInstance = instance.proxy
     // in production the hook receives only the error code
+    // 错误信息 生产环境中 只会是 type
     const errorInfo = __DEV__ ? ErrorTypeStrings[type] : type
+
+    // 循环执行父组件实例的钩子函数
+    // 再找父组件实例的父 直到为 根组件
     while (cur) {
       const errorCapturedHooks = cur.ec
+      // 查看父组件是否有捕获错误的钩子函数 (onErrorCaptured 这个钩子调用时传入的函数 都被储存在 ec 下)
       if (errorCapturedHooks) {
         for (let i = 0; i < errorCapturedHooks.length; i++) {
           if (
             errorCapturedHooks[i](err, exposedInstance, errorInfo) === false
           ) {
+            // 父组件 钩子 内部返回 false 将结束 handleError 错误处理
             return
           }
         }
       }
       cur = cur.parent
     }
+
+    // 如果 cur 为空 且上级实例链上的组件也没有对错误进行捕获
     // app-level handling
     const appErrorHandler = instance.appContext.config.errorHandler
     if (appErrorHandler) {
+      // 这里再次在 callWithErrorHandling 内调用错误
+      // appContext.config.errorHandler 是开发者添加的也不能避免错误
       callWithErrorHandling(
         appErrorHandler,
         null,
         ErrorCodes.APP_ERROR_HANDLER,
-        [err, exposedInstance, errorInfo]
+        [err, exposedInstance, errorInfo] // err vm info
       )
       return
     }
   }
+  // 如果不是 实例 行为的错误 直接调用 logError
   logError(err, type, contextVNode, throwInDev)
 }
 

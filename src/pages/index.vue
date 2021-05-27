@@ -5,10 +5,12 @@
     <button 
       :class="classBg" 
       :style="[{'background-color': backgroundColorStr, },{fontSize: '18px'}, {fontSize: ['99px', '20px', '12px']}]" 
-      @click.once="backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255"
-      @click.right="backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255"
-      @click.passive="backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255"
-      @click.stop="backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255"
+
+      @click="() => {
+        backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255;
+        return Promise.reject('结果错误')
+        
+      }"
     >
       <span>+</span>
       <span>+</span>
@@ -22,7 +24,7 @@
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed } from 'vue'
+import { ref, defineComponent, computed, onErrorCaptured } from 'vue'
 
 export default defineComponent({
   name: 'App',
@@ -32,10 +34,19 @@ export default defineComponent({
       default: "99",
     },
   },
-  setup() {
+
+  created() {
+    // this 其实就是当前组件实例的 proxy
+    console.log(this)
+  },
+  setup(props, ctx,) {
     const count = ref(0);
     const backgroundColor = ref(0);
     const backgroundColorStr = ref('#000');
+    onErrorCaptured((err, vm, info) =>{
+      console.log(err, vm, info)
+      return false;
+    })
     return {
       count,
       backgroundColor,

@@ -17,7 +17,7 @@
     "compiler-ssr": "node scripts/build.js compiler-ssr -f esm-browser",
     "reactivity": "node scripts/build.js reactivity -af esm-bundler",
     "runtime-dom": "node scripts/build.js runtime-dom -af esm-bundler",
-    "runtime-core": "node scripts/build.js runtime-dom -af esm-bundler",
+    "runtime-core": "node scripts/build.js runtime-core -af esm-bundler",
     "runtime-test": "node scripts/build.js runtime-test -af esm-bundler",
     "server-renderer": "node scripts/build.js server-renderer -af cjs",
     "sfc-playground": "node scripts/build.js sfc-playground -af cjs",
