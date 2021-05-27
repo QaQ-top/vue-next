@@ -38,10 +38,20 @@ export const NOOP = () => {}
 export const NO = () => false
 
 const onRE = /^on[^a-z]/
+/**
+ * 用来判断 字符串 是否是 on+(非小写字母) 开头
+ */
 export const isOn = (key: string) => onRE.test(key)
 
+/**
+ * 是否是 v-model 更新事件
+ * onUpdate:modelValue
+ */
 export const isModelListener = (key: string) => key.startsWith('onUpdate:')
 
+/**
+ * extend 就是 Object.assign 合并对象
+ */
 export const extend = Object.assign
 
 export const remove = <T>(arr: T[], el: T) => {
@@ -52,25 +62,55 @@ export const remove = <T>(arr: T[], el: T) => {
 }
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
+
+/**
+ * 对象是否 拥有该属性 key
+ */
 export const hasOwn = (
   val: object,
   key: string | symbol
 ): key is keyof typeof val => hasOwnProperty.call(val, key)
 
+/**
+ * 是否是 Array
+ */
 export const isArray = Array.isArray
+/**
+ * 是否是 Map
+ */
 export const isMap = (val: unknown): val is Map<any, any> =>
   toTypeString(val) === '[object Map]'
+/**
+ * 是否是 Set
+ */
 export const isSet = (val: unknown): val is Set<any> =>
   toTypeString(val) === '[object Set]'
 
+/**
+ * 是否是 Date(时间对象)
+ */
 export const isDate = (val: unknown): val is Date => val instanceof Date
+/**
+ * 是否是函数
+ */
 export const isFunction = (val: unknown): val is Function =>
   typeof val === 'function'
+/**
+ * 是否是字符串
+ */
 export const isString = (val: unknown): val is string => typeof val === 'string'
+/**
+ * 是否是 symbol
+ */
 export const isSymbol = (val: unknown): val is symbol => typeof val === 'symbol'
+/**
+ * 是否是 Object
+ */
 export const isObject = (val: unknown): val is Record<any, any> =>
   val !== null && typeof val === 'object'
-
+/**
+ * 是否是 Promise
+ */
 export const isPromise = <T = any>(val: unknown): val is Promise<T> => {
   return isObject(val) && isFunction(val.then) && isFunction(val.catch)
 }
@@ -101,17 +141,24 @@ export const isReservedProp = /*#__PURE__*/ makeMap(
     'onVnodeBeforeUnmount,onVnodeUnmounted'
 )
 
+/**
+ * @introduction 接收一个函数 返回一个 函数
+ * @introduction 创建一个 cache 闭包变量
+ * @introduction cache 用于缓存 解析结果 避免 重复解析
+ */
 const cacheStringFunction = <T extends (str: string) => string>(fn: T): T => {
   const cache: Record<string, string> = Object.create(null)
   return ((str: string) => {
+    // 访问存储
     const hit = cache[str]
+    // 没有存储的时候调用解析函数，并且存储解析的值
     return hit || (cache[str] = fn(str))
   }) as any
 }
 
 const camelizeRE = /-(\w)/g
 /**
- * @private
+ * @private 用来解析带 - 的字符串 转为驼峰
  */
 export const camelize = cacheStringFunction(
   (str: string): string => {
@@ -121,14 +168,14 @@ export const camelize = cacheStringFunction(
 
 const hyphenateRE = /\B([A-Z])/g
 /**
- * @private
+ * @private 将字符串非第一个单词并且是大小的 转为 小写
  */
 export const hyphenate = cacheStringFunction((str: string) =>
   str.replace(hyphenateRE, '-$1').toLowerCase()
 )
 
 /**
- * @private
+ * @private 将字符串 第一个字符转为 大写
  */
 export const capitalize = cacheStringFunction(
   (str: string) => str.charAt(0).toUpperCase() + str.slice(1)

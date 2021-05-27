@@ -24,6 +24,9 @@ declare module '@vue/reactivity' {
   }
 }
 
+/**
+ * 创建初始化渲染、后续 dom 更新 都会用到该对象的方法
+ */
 const rendererOptions = extend({ patchProp, forcePatchProp }, nodeOps)
 
 // lazy create the renderer - this makes core renderer logic tree-shakable
@@ -54,9 +57,9 @@ export const hydrate = ((...args) => {
 }) as RootHydrateFunction
 
 export const createApp = ((...args) => {
-  // console.log(args, "FFFFFFFFFFFFFFFFFFFF");
+  // console.log(args, "传入 createApp 参数");
   const app = ensureRenderer().createApp(...args)
-  // console.log(app)
+  // console.dir(app)
   if (__DEV__) {
     injectNativeTagCheck(app)
     injectCompilerOptionsCheck(app)

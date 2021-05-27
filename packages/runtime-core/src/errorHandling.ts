@@ -58,6 +58,10 @@ export const ErrorTypeStrings: Record<number | string, string> = {
 
 export type ErrorTypes = LifecycleHooks | ErrorCodes
 
+/**
+ * 在 try catch 内调用 外部传入函数
+ * 如果 fn 是 Promise 这里是无法不会的
+ */
 export function callWithErrorHandling(
   fn: Function,
   instance: ComponentInternalInstance | null,
@@ -73,6 +77,14 @@ export function callWithErrorHandling(
   return res
 }
 
+/**
+ * @description 监控到 函数 或者 一组函数 调用时内部错误 为函数添加具有异步错误处理的功能
+ * @param {(Function | Function[])} fn 函数 函数组 (会在函数内部调用)
+ * @param {(ComponentInternalInstance | null)} instance 函数调用 所在的组件
+ * @param {ErrorTypes} type  错误类型
+ * @param {unknown[]} [args] 在调用传入 函数 函数组时 将这个参数传入
+ * @returns {any[]} 返回监控后的函数 或者 函数组
+ */
 export function callWithAsyncErrorHandling(
   fn: Function | Function[],
   instance: ComponentInternalInstance | null,
@@ -82,6 +94,7 @@ export function callWithAsyncErrorHandling(
   if (isFunction(fn)) {
     const res = callWithErrorHandling(fn, instance, type, args)
     if (res && isPromise(res)) {
+      // 如果执行的 函数 是 Promise，就在 res.catch 内 捕获错误
       res.catch(err => {
         handleError(err, instance, type)
       })
@@ -89,6 +102,7 @@ export function callWithAsyncErrorHandling(
     return res
   }
 
+  // 函数组的 循环错误监听 处理
   const values = []
   for (let i = 0; i < fn.length; i++) {
     values.push(callWithAsyncErrorHandling(fn[i], instance, type, args))

@@ -10,9 +10,24 @@ const nativeOnRE = /^on[a-z]/
 
 type DOMRendererOptions = RendererOptions<Node, Element>
 
+/**
+ * 判断传入的 第二个参数 是否是 value
+ */
 export const forcePatchProp: DOMRendererOptions['forcePatchProp'] = (_, key) =>
   key === 'value'
 
+/**
+ * @description 用来将 模板语法的 attrs 处理成 Html 真正的 Attribute(属性)
+ * @param {*} el 元素
+ * @param {*} key 属性
+ * @param {*} prevValue 当前属性上一次绑定的值
+ * @param {*} nextValue 当前属性最新值
+ * @param {boolean} [isSVG=false] 是否是 svg 元素
+ * @param {*} prevChildren 子元素 组件
+ * @param {*} parentComponent el元素 所在的 vue 组件实例
+ * @param {*} parentSuspense
+ * @param {*} unmountChildren
+ */
 export const patchProp: DOMRendererOptions['patchProp'] = (
   el,
   key,
@@ -30,12 +45,14 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
       patchClass(el, nextValue, isSVG)
       break
     case 'style':
+      // 样式兼容处理
       patchStyle(el, prevValue, nextValue)
       break
     default:
       if (isOn(key)) {
         // ignore v-model listeners
         if (!isModelListener(key)) {
+          // 处理事件
           patchEvent(el, key, prevValue, nextValue, parentComponent)
         }
       } else if (shouldSetAsProp(el, key, nextValue, isSVG)) {

@@ -15,7 +15,7 @@ fs.watch('packages', options, (event, path) => runBuild(getPaths(path)))
 function getPaths(path) {
   if (path && path.includes('\\src\\')) {
     const paths = path.split('\\')
-    if (paths.length === 3) {
+    if (paths.length >= 3) {
       return paths
     }
   }

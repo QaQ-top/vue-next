@@ -21,7 +21,7 @@
     "runtime-test": "node scripts/build.js runtime-test -af esm-bundler",
     "server-renderer": "node scripts/build.js server-renderer -af cjs",
     "sfc-playground": "node scripts/build.js sfc-playground -af cjs",
-    "shared": "node scripts/build.js shared -af cjs esm-bundler",
+    "shared": "node scripts/build.js shared -af cjs  && node scripts/build.js shared -af esm-bundler",
     "size-check": "node scripts/build.js size-check -af cjs",
     "vue": "node scripts/build.js vue -f esm-bundler-runtime esm-browser-runtime",
     "vue-compat": "node scripts/build.js vue-compat -af cjs",
