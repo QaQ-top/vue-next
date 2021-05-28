@@ -23,10 +23,10 @@ export const forcePatchProp: DOMRendererOptions['forcePatchProp'] = (_, key) =>
  * @param {*} prevValue 当前属性上一次绑定的值
  * @param {*} nextValue 当前属性最新值
  * @param {boolean} [isSVG=false] 是否是 svg 元素
- * @param {*} prevChildren 子元素 组件
+ * @param {*} prevChildren 当前元素的 子元素(vdom数组)
  * @param {*} parentComponent el元素 所在的 vue 组件实例
  * @param {*} parentSuspense
- * @param {*} unmountChildren
+ * @param {*} unmountChildren 卸载组件 主要用来处理元素 key为 innerHTM textContent 时对组件进行卸载
  */
 export const patchProp: DOMRendererOptions['patchProp'] = (
   el,
@@ -52,10 +52,12 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
       if (isOn(key)) {
         // ignore v-model listeners
         if (!isModelListener(key)) {
-          // 处理事件
+          // 处理 vue 绑定事件
           patchEvent(el, key, prevValue, nextValue, parentComponent)
         }
       } else if (shouldSetAsProp(el, key, nextValue, isSVG)) {
+        // 判断 属性key 在 el元素 上的正确性
+        // 处理 dom 属性
         patchDOMProp(
           el,
           key,
@@ -70,6 +72,7 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
         // :true-value & :false-value
         // store value as dom properties since non-string values will be
         // stringified.
+        // 当 type="checkbox" 时处理 v-bind 的 防止 value 字符串化
         if (key === 'true-value') {
           ;(el as any)._trueValue = nextValue
         } else if (key === 'false-value') {
@@ -81,6 +84,14 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
   }
 }
 
+/**
+ * @description 判断是否是 dom 属性自身可访问属性 (内部有对特殊标签属性 进行过滤)
+ * @param {Element} el 元素节点
+ * @param {string} key 属性名称
+ * @param {unknown} value 属性值
+ * @param {boolean} isSVG 是否是svg
+ * @returns
+ */
 function shouldSetAsProp(
   el: Element,
   key: string,
@@ -88,12 +99,14 @@ function shouldSetAsProp(
   isSVG: boolean
 ) {
   if (isSVG) {
+    // Svg 不需要特殊 过滤
     // most keys must be set as attribute on svg elements to work
     // ...except innerHTML
     if (key === 'innerHTML') {
       return true
     }
     // or native onclick with function values
+    // 原生浏览器事件处理
     if (key in el && nativeOnRE.test(key) && isFunction(value)) {
       return true
     }
@@ -126,10 +139,11 @@ function shouldSetAsProp(
     return false
   }
 
+  // 事件绑定的是 字符串 不通过处理
   // native onclick with string value, must be set as attribute
   if (nativeOnRE.test(key) && isString(value)) {
     return false
   }
-
+  // 判断 原生 dom 是否 有该属性(props)
   return key in el
 }

@@ -17,7 +17,7 @@ let tempContainer: HTMLElement
 let tempSVGContainer: SVGElement
 
 /**
- * 提供 初次渲染 创建元素、
+ * 提供 渲染、创建、删除、克隆、查找元素, 文本内容更新
  */
 export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
   /**

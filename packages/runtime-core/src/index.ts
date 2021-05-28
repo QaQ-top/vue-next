@@ -311,7 +311,13 @@ const _compatUtils = {
 }
 
 /**
+ * @info 兼容性工具
  * @internal only exposed in compat builds.
+ * @info warnDeprecation
+ * @info createCompatVue
+ * @info isCompatEnabled
+ * @info checkCompatEnabled
+ * @info softAssertCompatEnabled
  */
 export const compatUtils = (__COMPAT__
   ? _compatUtils

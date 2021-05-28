@@ -212,6 +212,9 @@ export const toNumber = (val: any): any => {
 }
 
 let _globalThis: any
+/**
+ * 获取 全局对象
+ */
 export const getGlobalThis = (): any => {
   return (
     _globalThis ||

@@ -1,30 +1,32 @@
 <template>
   <main>
-    <div>Vue {{ count }} {{ num }}</div>
+    <div contenteditable >Vue {{ count }} {{ num }}</div>
     <input type="text" v-model="classBg">
     <button 
       :class="classBg" 
       :style="[{'background-color': backgroundColorStr, },{fontSize: '18px'}, {fontSize: ['99px', '20px', '12px']}]" 
-
+      :inck="backgroundColorStr"
       @click="() => {
         backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255;
-        return Promise.reject('结果错误')
-        
       }"
     >
       <span>+</span>
       <span>+</span>
       <span>+</span>
     </button>
+    <input type="checkbox" v-model="backgroundColorStr" :true-value="446" readonly />
     <template v-for="(item, index) in iter" :key="index">
       <br />
       {{ item }} - {{ index }}
     </template>
+    <div v-html='"<h1>title</h1>"' ref="45" v-pre>
+      
+    </div>
   </main>
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed, onErrorCaptured } from 'vue'
+import { ref, defineComponent, computed } from 'vue'
 
 export default defineComponent({
   name: 'App',
@@ -37,16 +39,12 @@ export default defineComponent({
 
   created() {
     // this 其实就是当前组件实例的 proxy
-    console.log(this)
+    // console.log(this)
   },
   setup(props, ctx,) {
     const count = ref(0);
     const backgroundColor = ref(0);
     const backgroundColorStr = ref('#000');
-    onErrorCaptured((err, vm, info) =>{
-      console.log(err, vm, info)
-      return false;
-    })
     return {
       count,
       backgroundColor,

@@ -103,13 +103,6 @@ export function patchEvent(
   nextValue: EventValue | null,
   instance: ComponentInternalInstance | null = null
 ) {
-  console.log({
-    el,
-    rawName,
-    prevValue,
-    nextValue,
-    instance
-  })
   // vei = vue event invokers
   /**
    * vue 事件调用器对象
@@ -192,7 +185,6 @@ function createInvoker(
      * 当前事件触发的时间戳
      */
     const timeStamp = e.timeStamp || _getNow()
-    console.log(e, 'Event')
     /**
      * 触发时的时间戳 对比 事件初次添加时的时间戳
      */
@@ -208,7 +200,6 @@ function createInvoker(
   }
   invoker.value = initialValue
   invoker.attached = getNow()
-  console.dir(invoker)
 
   return invoker
 }
@@ -220,7 +211,6 @@ function patchStopImmediatePropagation(
   e: Event,
   value: EventValue
 ): EventValue {
-  console.log({ e, value }, 'patchStopImmediatePropagation')
   // value 是 vue模板绑定的值，可能是一组事件函数
   if (isArray(value)) {
     const originalStop = e.stopImmediatePropagation

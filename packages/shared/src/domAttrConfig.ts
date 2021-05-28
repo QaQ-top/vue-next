@@ -12,6 +12,9 @@ import { makeMap } from './makeMap'
  * - readonly -> readOnly
  */
 const specialBooleanAttrs = `itemscope,allowfullscreen,formnovalidate,ismap,nomodule,novalidate,readonly`
+/**
+ * 是否是 不需要值的Attribute
+ */
 export const isSpecialBooleanAttr = /*#__PURE__*/ makeMap(specialBooleanAttrs)
 
 /**

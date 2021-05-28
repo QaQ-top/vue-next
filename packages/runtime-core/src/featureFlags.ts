@@ -1,11 +1,17 @@
 import { getGlobalThis } from '@vue/shared'
 
 /**
+ *
  * This is only called in esm-bundler builds.
  * It is called when a renderer is created, in `baseCreateRenderer` so that
  * importing runtime-core is side-effects free.
- *
  * istanbul-ignore-next
+ *
+ * __VUE_OPTIONS_API__ (enable/disable Options API support, default: true)
+ * __VUE_PROD_DEVTOOLS__ (enable/disable devtools support in production, default: false)
+ *
+ * vite.config.js define 配置项可以将其覆盖
+ *
  */
 export function initFeatureFlags() {
   let needWarn = false

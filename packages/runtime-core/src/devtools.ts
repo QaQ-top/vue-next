@@ -30,6 +30,10 @@ interface DevtoolsHook {
 
 export let devtools: DevtoolsHook
 
+/**
+ * @description 设置 Devtools 钩子
+ * @param {DevtoolsHook} hook
+ */
 export function setDevtoolsHook(hook: DevtoolsHook) {
   devtools = hook
 }

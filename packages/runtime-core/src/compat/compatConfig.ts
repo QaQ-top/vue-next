@@ -71,7 +71,9 @@ type DeprecationData = {
   message: string | ((...args: any[]) => string)
   link?: string
 }
-
+/**
+ * @info 兼容性消息 提示 并且有文档link提示
+ */
 export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
   [DeprecationTypes.GLOBAL_MOUNT]: {
     message:
@@ -311,6 +313,9 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
     link: `https://v3.vuejs.org/guide/migration/keycode-modifiers.html`
   },
 
+  /**
+   * 处理属性 属性值 为 false 时 获取该提示语
+   */
   [DeprecationTypes.ATTR_FALSE_VALUE]: {
     message: (name: string) =>
       `Attribute "${name}" with v-bind value \`false\` will render ` +

@@ -448,10 +448,15 @@ function baseCreateRenderer(
   createHydrationFns?: typeof createHydrationFunctions
 ): any {
   // compile-time feature flags check
+  // 在 baseCreateRenderer 运行时的全局对象上 挂载 全局配置 例如 是否启用 devtools 插件
   if (__ESM_BUNDLER__ && !__TEST__) {
     initFeatureFlags()
   }
 
+  /**
+   * 开发环境 并且 客户端安装 有 Vue.js devtools
+   * __VUE_DEVTOOLS_GLOBAL_HOOK__ 只有安装工具了 才会有 这个钩子
+   */
   if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
     const target = getGlobalThis()
     target.__VUE__ = true

@@ -15,6 +15,14 @@ fs.watch('packages', options, (event, path) => runBuild(getPaths(path)))
 function getPaths(path) {
   if (path && path.includes('\\src\\')) {
     const paths = path.split('\\')
+    const is = [
+      'server-renderer',
+      'vue-compat',
+      'template-explorer',
+      'size-check',
+      'sfc-playground'
+    ]
+    if (is.includes(paths[0])) return []
     if (paths.length >= 3) {
       return paths
     }

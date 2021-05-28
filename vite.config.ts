@@ -17,7 +17,8 @@ export default defineConfig({
     '@components': resolve(__dirname, 'src/components')
   },
   define: {
-    __VITE__GLOBAL__: JSON.stringify('全局变量')
+    __VITE__GLOBAL__: JSON.stringify('全局变量'),
+    __VUE_PROD_DEVTOOLS__: true
   },
   plugins: [vue()],
   esbuild: {

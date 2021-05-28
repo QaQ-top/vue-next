@@ -25,7 +25,11 @@ declare module '@vue/reactivity' {
 }
 
 /**
- * 创建初始化渲染、后续 dom 更新 都会用到该对象的方法
+ * @description 渲染器配置项
+ * @info 创建初始化渲染、后续 dom 更新 都会用到该对象的方法
+ * @info patchProp 初始化、更新 模板上的属性 为 HTML Attribute
+ * @info nodeOps 初始化、更新 dom
+ * @info forcePatchProp 判断传入的值 是否 为 "value"
  */
 const rendererOptions = extend({ patchProp, forcePatchProp }, nodeOps)
 
@@ -35,10 +39,16 @@ let renderer: Renderer<Element> | HydrationRenderer
 
 let enabledHydration = false
 
+/**
+ * 渲染器
+ */
 function ensureRenderer() {
   return renderer || (renderer = createRenderer<Node, Element>(rendererOptions))
 }
 
+/**
+ * SSR 渲染器
+ */
 function ensureHydrationRenderer() {
   renderer = enabledHydration
     ? renderer
