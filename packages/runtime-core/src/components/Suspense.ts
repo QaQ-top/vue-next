@@ -745,6 +745,10 @@ function normalizeSuspenseSlot(s: any) {
   return normalizeVNode(s)
 }
 
+/**
+ * @info 添加到 suspense 副作用(effects) 队列
+ * @info 或者调用 queuePostFlushCb
+ */
 export function queueEffectWithSuspense(
   fn: Function | Function[],
   suspense: SuspenseBoundary | null

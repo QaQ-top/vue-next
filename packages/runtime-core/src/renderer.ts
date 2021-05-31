@@ -301,13 +301,19 @@ function createDevEffectOptions(
     onTrigger: instance.rtg ? e => invokeArrayFns(instance.rtg!, e) : void 0
   }
 }
-
+/**
+ * 添加到 执行队列
+ */
 export const queuePostRenderEffect = __FEATURE_SUSPENSE__
   ? queueEffectWithSuspense
   : queuePostFlushCb
 
 /**
- *
+ * @param rawRef 是dom、组件所绑定的最新 ref 的对象 { i:...,r:...}
+ * @param oldRawRef 更新前的 Ref
+ * @param parentSuspense
+ * @param vnode 当前ref所绑定的 vnode
+ * @param isUnmount 是否是卸载行为
  */
 export const setRef = (
   rawRef: VNodeNormalizedRef,
@@ -316,7 +322,7 @@ export const setRef = (
   vnode: VNode,
   isUnmount = false
 ) => {
-  console.log({ rawRef, oldRawRef, parentSuspense, vnode, isUnmount })
+  // console.log({ rawRef, oldRawRef, parentSuspense, vnode, isUnmount })
   if (isArray(rawRef)) {
     rawRef.forEach((r, i) =>
       setRef(
@@ -330,7 +336,7 @@ export const setRef = (
     return
   }
 
-  // 如果是异步组件 并且 是挂载行为 不做操作
+  // 如果是异步组件 并且 不是卸载行为
   if (isAsyncWrapper(vnode) && !isUnmount) {
     // when mounting async components, nothing needs to be done,
     // because the template ref is forwarded to inner component
@@ -342,12 +348,17 @@ export const setRef = (
     return
   }
 
+  // 判断vnode是否是组件 从而获取 组件暴露对象 否则获取元素节点
   const refValue =
     vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
       ? vnode.component!.exposed || vnode.component!.proxy
       : vnode.el
+  // 卸载行为 value 为空
   const value = isUnmount ? null : refValue
 
+  /**
+   * i: 当前vnode所在的组件实例  r: ref 绑定的值
+   */
   const { i: owner, r: ref } = rawRef
   if (__DEV__ && !owner) {
     warn(
@@ -356,36 +367,67 @@ export const setRef = (
     )
     return
   }
+  /**
+   * 旧 ref 所绑定的 值
+   */
   const oldRef = oldRawRef && (oldRawRef as VNodeNormalizedRefAtom).r
+  /**
+   * owner.refs 是当前组件内 全部 ref
+   * ref 的值为 key 值是绑定的 dom、组件
+   */
   const refs = owner.refs === EMPTY_OBJ ? (owner.refs = {}) : owner.refs
+  /**
+   * 当前 ref 组件实例 setup 返回的那个对象
+   */
   const setupState = owner.setupState
 
   // dynamic ref changed. unset old ref
+  /**
+   * 旧ref存在，并且新ref与旧ref不一致 就清空就旧ref
+   */
   if (oldRef != null && oldRef !== ref) {
     if (isString(oldRef)) {
+      // 在组件实例上清空 旧ref
       refs[oldRef] = null
+      // setupState 里面是否存在旧ref 这个 key
       if (hasOwn(setupState, oldRef)) {
+        // 清空 setupState 里面的旧ref
         setupState[oldRef] = null
       }
     } else if (isRef(oldRef)) {
+      // 如果是旧ref 是一个RefImpl
       oldRef.value = null
     }
   }
 
+  /**
+   * 再设置新 ref
+   */
   if (isString(ref)) {
+    // 新 ref 是字符串
+    /**
+     * 设置新ref
+     */
     const doSet = () => {
       if (__COMPAT__ && isCompatEnabled(DeprecationTypes.V_FOR_REF, owner)) {
         registerLegacyRef(refs, ref, refValue, owner, rawRef.f, isUnmount)
       } else {
+        // 在当前组件实例上添加 ref
         refs[ref] = value
       }
+      // 判断 setupState 是否拥有新 ref 这个 key
       if (hasOwn(setupState, ref)) {
+        // 如果setupState里面这个 key 是响应式那么你就能获取到ref绑定的dom、组件
         setupState[ref] = value
       }
     }
     // #1789: for non-null values, set them after render
     // null values means this is unmount and it should not overwrite another
     // ref with the same key
+    /**
+     * value 是空 代表卸载 所以直接执行 doSet
+     *
+     */
     if (value) {
       ;(doSet as SchedulerCb).id = -1
       queuePostRenderEffect(doSet, parentSuspense)
@@ -393,9 +435,12 @@ export const setRef = (
       doSet()
     }
   } else if (isRef(ref)) {
+    // 如果是新ref 是一个RefImpl
     const doSet = () => {
+      // 直接改value
       ref.value = value
     }
+    // value 是空 代表卸载 直接执行
     if (value) {
       ;(doSet as SchedulerCb).id = -1
       queuePostRenderEffect(doSet, parentSuspense)
@@ -403,6 +448,8 @@ export const setRef = (
       doSet()
     }
   } else if (isFunction(ref)) {
+    // 如果新ref 是一个函数 在try catch执行 将value 和 refs传入
+    // 所以 模板语法 可以这样获取一组dom (:ref='el=>{dom.push(el)}')
     callWithErrorHandling(ref, owner, ErrorCodes.FUNCTION_REF, [value, refs])
   } else if (__DEV__) {
     warn('Invalid template ref type:', value, `(${typeof value})`)
@@ -517,17 +564,17 @@ function baseCreateRenderer(
     slotScopeIds = null,
     optimized = false
   ) => {
-    console.log({
-      n1,
-      n2,
-      container,
-      anchor,
-      parentComponent,
-      parentSuspense,
-      isSVG,
-      slotScopeIds,
-      optimized
-    })
+    // console.log({
+    //   n1,
+    //   n2,
+    //   container,
+    //   anchor,
+    //   parentComponent,
+    //   parentSuspense,
+    //   isSVG,
+    //   slotScopeIds,
+    //   optimized
+    // })
 
     /**
      * patching & not same type, unmount old tree

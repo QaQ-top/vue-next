@@ -15,7 +15,7 @@
       <!-- <br /> -->
       {{ item }} - {{ index }}
     </div>
-    <template>
+    <template ref="87">
       <div v-html="<h1>title</h1>" v-pre v-if="true"></div>
     </template>
     <h1>
@@ -63,6 +63,7 @@ export default defineComponent({
       fontColor: computed(() => Math.abs(backgroundColor.value - 255)),
       classBg: 'bg',
       backgroundColorStr,
+      "45": "",
     }
   },
   components: {

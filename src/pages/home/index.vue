@@ -10,6 +10,7 @@
 
 
     <!-- ref 获取多dom -->
+    <!-- 函数写法接收两值 (el, refs) 第一个也能是组件， refs 是当前组件内全部 ref 绑定 -->
     <div :ref='el=>{dom.push(el)}' v-for="(_ , n) in 9" :key="n"  >{{_}}</div>
   </div>
 </template>
@@ -26,20 +27,27 @@ const Test = defineComponent({
 export default defineComponent({
   name: 'Home',
 
-
   setup(props, ctx) {
     const test = ref();
     // 获取多 dom
     const dom = ref<Element[]>([]);
+    console.log("start")
+    nextTick(() => {
+      console.log("nextTick 2222")
+    })
     onMounted(() => {
-      console.log(test.value)
+      console.log("onMounted")
     });
 
-    nextTick(() => {
-      console.log(dom.value)
-    })
+    
+    console.log("end")
     // localStorage.setItem("token", "99999")
 
+    const b = ref(0);
+    // onUpdated(() => {
+    //   console.log("onUpdated")
+    //   b.value = b.value++
+    // });
 
     // setTimeout(() => {
     //   // Storage.token = "77777777";
@@ -53,7 +61,7 @@ export default defineComponent({
       dom,
       r: ref(0),
       g: ref(0),
-      b: ref(0),
+      b,
     }
   },
   components: {

@@ -1,9 +1,11 @@
-import { createApp, h, onErrorCaptured } from 'vue'
+import { createApp, h, onErrorCaptured, nextTick } from 'vue'
 import './themes/index.scss'
 // import '@src/utils/storage';
-import App from '@src/pages/index.vue'
-// import App from '@src/pages/home/index.vue';
-
+// import App from '@src/pages/index.vue'
+import App from '@src/pages/home/index.vue'
+nextTick(() => {
+  console.log('nextTick 1111')
+})
 const root = createApp({
   render: () => {
     return h(App)
