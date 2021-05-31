@@ -37,6 +37,9 @@ export interface AsyncComponentOptions<T = any> {
   ) => any
 }
 
+/**
+ * 是否是 AsyncComponentWrapper
+ */
 export const isAsyncWrapper = (i: ComponentInternalInstance | VNode): boolean =>
   !!(i.type as ComponentOptions).__asyncLoader
 

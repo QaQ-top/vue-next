@@ -1,39 +1,50 @@
 <template>
-  <main>
-    <div contenteditable >Vue {{ count }} {{ num }}</div>
-    <input type="text" v-model="classBg">
-    <button 
-      :class="classBg" 
-      :style="[{'background-color': backgroundColorStr, },{fontSize: '18px'}, {fontSize: ['99px', '20px', '12px']}]" 
+  <main id="main">
+    <div contenteditable>Vue {{ count }} {{ num }}</div>
+    <input type="text" v-model="classBg" />
+    <button
+      :class="classBg"
+      :style="[{ 'background-color': backgroundColorStr, }, { fontSize: '18px' }, { fontSize: ['99px', '20px', '12px'] }]"
       :inck="backgroundColorStr"
       @click="() => {
-        backgroundColorStr = '#fff';backgroundColor = backgroundColor === 255 ? 0 : 255;
+        backgroundColorStr = '#fff'; backgroundColor = backgroundColor === 255 ? 0 : 255;
       }"
-    >
-      <span>+</span>
-      <span>+</span>
-      <span>+</span>
-    </button>
+    >+++</button>
     <input type="checkbox" v-model="backgroundColorStr" :true-value="446" readonly />
-    <template v-for="(item, index) in iter" :key="index">
-      <br />
+    <div v-for="(item, index) in iter" :key="index">
+      <!-- <br /> -->
       {{ item }} - {{ index }}
-    </template>
-    <div v-html='"<h1>title</h1>"' ref="45" v-pre>
-      
     </div>
+    <template>
+      <div v-html="<h1>title</h1>" v-pre v-if="true"></div>
+    </template>
+    <h1>
+      <suspense ref="45" >
+        <template #default>
+          <Sus />
+        </template>
+        <template #fallback>Loadding...</template>
+      </suspense>
+    </h1>
+    <h1 id="teleport"></h1>
+    <teleport to='head'>
+      转移 》》》 
+      目标元素必须事先存在
+      比如 在 suspense 组件内部 就可以异步 插入到任意位置
+    </teleport>
   </main>
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed } from 'vue'
+import { ref, defineComponent, computed } from 'vue';
+import Sus from '../components/suspense.vue'
 
 export default defineComponent({
   name: 'App',
   props: {
     num: {
       type: String,
-      default: "99",
+      default: '99',
     },
   },
 
@@ -41,10 +52,10 @@ export default defineComponent({
     // this 其实就是当前组件实例的 proxy
     // console.log(this)
   },
-  setup(props, ctx,) {
-    const count = ref(0);
-    const backgroundColor = ref(0);
-    const backgroundColorStr = ref('#000');
+  setup(props, ctx) {
+    const count = ref(0)
+    const backgroundColor = ref(0)
+    const backgroundColorStr = ref('#000')
     return {
       count,
       backgroundColor,
@@ -54,13 +65,20 @@ export default defineComponent({
       backgroundColorStr,
     }
   },
+  components: {
+    Sus,
+  }
 })
 </script>
 
 <style scoped>
 main {
   min-height: 100vh;
-  background-color: rgb(v-bind(backgroundColor), v-bind(backgroundColor), v-bind(backgroundColor));
+  background-color: rgb(
+    v-bind(backgroundColor),
+    v-bind(backgroundColor),
+    v-bind(backgroundColor)
+  );
   color: rgb(v-bind(fontColor), v-bind(fontColor), v-bind(fontColor));
 }
 .bg {

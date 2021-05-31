@@ -278,13 +278,19 @@ export function isVNode(value: any): value is VNode {
   return value ? value.__v_isVNode === true : false
 }
 
+/**
+ * @description 对比两vdom 类型 与 key 是否一致 (用来判断 vnode 是否更新)
+ * @info 开发环境 会更加 热更新 去强制表示 组件不一致
+ */
 export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
+  // 开发环境 并且更新的 vdom 是组件 并且组件在 hmrDirtyComponents 内
   if (
     __DEV__ &&
     n2.shapeFlag & ShapeFlags.COMPONENT &&
     hmrDirtyComponents.has(n2.type as ConcreteComponent)
   ) {
     // HMR only: if the component has been hot-updated, force a reload.
+    // 如果该组件已经被热更新，则强制重新加载
     return false
   }
   return n1.type === n2.type && n1.key === n2.key

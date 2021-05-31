@@ -306,6 +306,9 @@ export const queuePostRenderEffect = __FEATURE_SUSPENSE__
   ? queueEffectWithSuspense
   : queuePostFlushCb
 
+/**
+ *
+ */
 export const setRef = (
   rawRef: VNodeNormalizedRef,
   oldRawRef: VNodeNormalizedRef | null,
@@ -313,6 +316,7 @@ export const setRef = (
   vnode: VNode,
   isUnmount = false
 ) => {
+  console.log({ rawRef, oldRawRef, parentSuspense, vnode, isUnmount })
   if (isArray(rawRef)) {
     rawRef.forEach((r, i) =>
       setRef(
@@ -326,9 +330,15 @@ export const setRef = (
     return
   }
 
+  // 如果是异步组件 并且 是挂载行为 不做操作
   if (isAsyncWrapper(vnode) && !isUnmount) {
     // when mounting async components, nothing needs to be done,
     // because the template ref is forwarded to inner component
+    /**
+     * 当挂载异步组件时，不需要做任何事情。
+     * 因为模板引用会被转发给内部组件
+     */
+
     return
   }
 
@@ -459,10 +469,12 @@ function baseCreateRenderer(
    */
   if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
     const target = getGlobalThis()
+    // 设置当前环境是 vue 环境
     target.__VUE__ = true
     setDevtoolsHook(target.__VUE_DEVTOOLS_GLOBAL_HOOK__)
   }
 
+  console.log(options, '渲染器配置项')
   const {
     insert: hostInsert,
     remove: hostRemove,
@@ -482,6 +494,18 @@ function baseCreateRenderer(
 
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
+  /**
+   * @description
+   * @param n1 更新前的 vnode
+   * @param n2 更新后的 vnode
+   * @param container 当前更改元素节点的父元素节点
+   * @param anchor 用来插入元素时 的 锚点 默认null
+   * @param parentComponent 当前元素所在的组件实例 默认null
+   * @param parentSuspense  默认 null
+   * @param isSVG  是否是 Svg 元素 默认false
+   * @param slotScopeIds 插槽的空间命名 ID 默认null
+   * @param optimized 是否开启优化 默认false
+   */
   const patch: PatchFn = (
     n1,
     n2,
@@ -493,10 +517,31 @@ function baseCreateRenderer(
     slotScopeIds = null,
     optimized = false
   ) => {
-    // patching & not same type, unmount old tree
+    console.log({
+      n1,
+      n2,
+      container,
+      anchor,
+      parentComponent,
+      parentSuspense,
+      isSVG,
+      slotScopeIds,
+      optimized
+    })
+
+    /**
+     * patching & not same type, unmount old tree
+     * 这个vnode之前存在 并且 旧的vnode 与 新的vnode 类型、key不一致
+     * 直接删除 旧vnode
+     */
     if (n1 && !isSameVNodeType(n1, n2)) {
+      // key 和 dom 类型发生变化后 才会 进入到这个环节
       anchor = getNextHostNode(n1)
+
+      // key 或者 dom 类型都不一样了 直接删除 旧 dom 或者 组件
       unmount(n1, parentComponent, parentSuspense, true)
+
+      // 清空旧 vnode
       n1 = null
     }
 
@@ -2135,6 +2180,9 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * 卸载 vnode
+   */
   const unmount: UnmountFn = (
     vnode,
     parentComponent,
@@ -2361,13 +2409,20 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * 找到 当前 vnode 对应的根节点的 下一个节点
+   */
   const getNextHostNode: NextFn = vnode => {
+    // 判断 虚拟节点 是否是组件
     if (vnode.shapeFlag & ShapeFlags.COMPONENT) {
+      // 找到组件 子树( 当前组件的 模板编译 后的 vnode 可能也是一个组件 ) 再次递归
       return getNextHostNode(vnode.component!.subTree)
     }
+    // 处理异步组件 <suspense></suspense>
     if (__FEATURE_SUSPENSE__ && vnode.shapeFlag & ShapeFlags.SUSPENSE) {
       return vnode.suspense!.next()
     }
+    // 传入自己的 原生dom el 下一个节点 或者 anchor 的下一个节点
     return hostNextSibling((vnode.anchor || vnode.el)!)
   }
 

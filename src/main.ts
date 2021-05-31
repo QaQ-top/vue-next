@@ -1,8 +1,8 @@
 import { createApp, h, onErrorCaptured } from 'vue'
 import './themes/index.scss'
+// import '@src/utils/storage';
 import App from '@src/pages/index.vue'
-
-console.log(import.meta.env.VITE_FAST)
+// import App from '@src/pages/home/index.vue';
 
 const root = createApp({
   render: () => {
@@ -14,6 +14,7 @@ const root = createApp({
      * onErrorCaptured 可以捕获 子孙组件的错误 无法捕获自己组件实例的错误，不过祖先组件可以捕获当前组件的错误
      * return 可以阻止 捕获链 的传播到祖先级的 onErrorCaptured 和 全局的 config.errorHandler
      */
+
     onErrorCaptured((err, vm, info) => {
       console.log(err, vm, info)
       return false

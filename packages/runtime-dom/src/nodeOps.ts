@@ -146,7 +146,7 @@ export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
       : tempContainer || (tempContainer = doc.createElement('div'))
     temp.innerHTML = content
     /**
-     * 每次 如何循环 在 anchor 插入静态的第一个子
+     * 每次 循环 在 anchor 插入静态的第一个子
      * 插入 都会销毁掉 当前 firstChild
      * 然后给 node 赋值最新的 firstChild 再次循环
      */

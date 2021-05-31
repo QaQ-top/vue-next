@@ -17,6 +17,7 @@ function getPaths(path) {
     const paths = path.split('\\')
     const is = [
       'server-renderer',
+      'runtime-test',
       'vue-compat',
       'template-explorer',
       'size-check',

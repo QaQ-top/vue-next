@@ -186,6 +186,7 @@ export interface ComponentOptionsBase<
 
   /**
    * marker for AsyncComponentWrapper
+   * @info 对 AsyncComponentWrapper 进行标记
    * @internal
    */
   __asyncLoader?: () => Promise<ConcreteComponent>
