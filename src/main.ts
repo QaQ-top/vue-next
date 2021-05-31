@@ -1,11 +1,20 @@
 import { createApp, h, onErrorCaptured, nextTick } from 'vue'
+
+/**
+ * NOT GO 不太理解 这个 nextTick 应该是第一个 then 的 挂载
+ * 然后再去调用vue vue内部调度任务 应该 在这个 nextTick 才对 后面 then
+ * 都是执行时 确是 调度先执行 再执行 nextTick
+ * 这个没看明白
+ *
+ */
+nextTick(() => {
+  console.log('nextTick 1111')
+})
+
 import './themes/index.scss'
 // import '@src/utils/storage';
 // import App from '@src/pages/index.vue'
 import App from '@src/pages/home/index.vue'
-nextTick(() => {
-  console.log('nextTick 1111')
-})
 const root = createApp({
   render: () => {
     return h(App)
