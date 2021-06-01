@@ -747,7 +747,7 @@ function normalizeSuspenseSlot(s: any) {
 
 /**
  * @info 添加到 suspense 副作用(effects) 队列
- * @info 或者调用 queuePostFlushCb
+ * @info 或者调用 queuePostFlushCb 添加到调度任务 的 后置任务
  */
 export function queueEffectWithSuspense(
   fn: Function | Function[],

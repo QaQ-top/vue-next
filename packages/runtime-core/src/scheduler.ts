@@ -209,10 +209,7 @@ export function invalidateJob(job: SchedulerJob) {
 }
 
 /**
- * 推入
- */
-/**
- * @description 将任务到 某个队列中 的公共方法
+ * @description 将任务加到 某个队列中 的公共方法
  * @param {SchedulerCbs} cb 执行任务
  * @param {(SchedulerCb[] | null)} 目标队列
  * @param {SchedulerCb[]} 目标执行队列

@@ -309,6 +309,7 @@ export const queuePostRenderEffect = __FEATURE_SUSPENSE__
   : queuePostFlushCb
 
 /**
+ * @description 设置 ref 绑定 绑定任务 添加到调度器执行
  * @param rawRef 是dom、组件所绑定的最新 ref 的对象 { i:...,r:...}
  * @param oldRawRef 更新前的 Ref
  * @param parentSuspense
@@ -2228,7 +2229,12 @@ function baseCreateRenderer(
   }
 
   /**
-   * 卸载 vnode
+   * @description 卸载 vnode
+   * @param vnode 要卸载 的 虚拟节点
+   * @param parentComponent 当前 vnode 所在组件 的实例
+   * @param parentSuspense  默认 null
+   * @param doRemove  是否是删除操作
+   * @param optimized  优化
    */
   const unmount: UnmountFn = (
     vnode,
@@ -2249,6 +2255,7 @@ function baseCreateRenderer(
     } = vnode
     // unset ref
     if (ref != null) {
+      // vnode 有绑定 ref 就 解除绑定
       setRef(ref, null, parentSuspense, vnode, true)
     }
 
