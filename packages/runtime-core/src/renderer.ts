@@ -2259,20 +2259,27 @@ function baseCreateRenderer(
       setRef(ref, null, parentSuspense, vnode, true)
     }
 
+    // 处理 keep-alive
     if (shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
-      console.log(vnode)
       ;(parentComponent!.ctx as KeepAliveContext).deactivate(vnode)
       return
     }
 
     const shouldInvokeDirs = shapeFlag & ShapeFlags.ELEMENT && dirs
 
+    // console.log(vnode)
+    // 在卸载前 触发 vnode 的生命周期
     let vnodeHook: VNodeHook | undefined | null
     if ((vnodeHook = props && props.onVnodeBeforeUnmount)) {
+      // 执行 钩子
       invokeVNodeHook(vnodeHook, parentComponent, vnode)
     }
 
+    /**
+     * 判断组件类型 执行相关操作
+     */
     if (shapeFlag & ShapeFlags.COMPONENT) {
+      console.log(vnode)
       unmountComponent(vnode.component!, parentSuspense, doRemove)
     } else {
       if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
@@ -2378,6 +2385,12 @@ function baseCreateRenderer(
     hostRemove(end)
   }
 
+  /**
+   * @description 卸载组件
+   * @param instance 要卸载的组件
+   * @param parentSuspense 默认 null
+   * @param doRemove 是否是删除操作
+   */
   const unmountComponent = (
     instance: ComponentInternalInstance,
     parentSuspense: SuspenseBoundary | null,
@@ -2522,6 +2535,9 @@ function baseCreateRenderer(
   }
 }
 
+/**
+ * 调用 vnode 钩子 并且进行错误捕获
+ */
 export function invokeVNodeHook(
   hook: VNodeHook,
   instance: ComponentInternalInstance | null,

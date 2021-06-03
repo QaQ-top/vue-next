@@ -8,7 +8,7 @@ import { createApp, h, onErrorCaptured, nextTick } from 'vue'
  *
  */
 nextTick(() => {
-  console.log('nextTick 1111')
+  console.log('')
 })
 
 import './themes/index.scss'

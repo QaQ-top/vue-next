@@ -156,19 +156,61 @@ export { ComponentOptions }
 type LifecycleHook<TFn = Function> = TFn[] | null
 
 export const enum LifecycleHooks {
+  /**
+   * beforeCreate 创建前
+   */
   BEFORE_CREATE = 'bc',
+  /**
+   * created 创建后
+   */
   CREATED = 'c',
+  /**
+   * beforeMount 挂载前
+   */
   BEFORE_MOUNT = 'bm',
+  /**
+   * mounted 挂载后
+   */
   MOUNTED = 'm',
+  /**
+   * beforeUpdate 更新前
+   */
   BEFORE_UPDATE = 'bu',
+  /**
+   * updated 更新后
+   */
   UPDATED = 'u',
+  /**
+   * beforeUnmount 卸载前
+   */
   BEFORE_UNMOUNT = 'bum',
+  /**
+   * unmounted 卸载后
+   */
   UNMOUNTED = 'um',
+  /**
+   * deactivated 停用后
+   */
   DEACTIVATED = 'da',
+  /**
+   * activated 启用后
+   */
   ACTIVATED = 'a',
+  /**
+   * renderTriggered 数据更新时 跟踪依赖
+   */
   RENDER_TRIGGERED = 'rtg',
+  /**
+   * renderTracked 渲染时 跟踪依赖
+   */
   RENDER_TRACKED = 'rtc',
+  /**
+   * errorCaptured 错误捕获
+   */
   ERROR_CAPTURED = 'ec',
+  /**
+   * serverPrefetch ssr 的钩子
+   */
   SERVER_PREFETCH = 'sp'
 }
 
@@ -200,17 +242,34 @@ export type InternalRenderFunction = {
 }
 
 /**
- * We expose a subset of properties on the internal instance as they are
+ * @interface Vue 组件实例
+ * @info We expose a subset of properties on the internal instance as they are
  * useful for advanced external libraries and tools.
  */
 export interface ComponentInternalInstance {
+  /**
+   * @info 自增唯一id标示
+   */
   uid: number
+  /**
+   * @info 组件类型
+   */
   type: ConcreteComponent
+  /**
+   * @info 当前组件的父组件实例
+   */
   parent: ComponentInternalInstance | null
+  /**
+   * @info vue 根组件实例
+   */
   root: ComponentInternalInstance
+  /**
+   * @info 应用上下文(全局配置)
+   */
   appContext: AppContext
   /**
    * Vnode representing this component in its parent's vdom tree
+   * @info 该组件的虚拟节点
    */
   vnode: VNode
   /**
@@ -220,15 +279,18 @@ export interface ComponentInternalInstance {
   next: VNode | null
   /**
    * Root vnode of this component's own vdom tree
+   * @info 当前组件自己 的根 vnode (模板语法的根，或者 render setup 返回的 dom)
    */
   subTree: VNode
   /**
    * The reactive effect for rendering and patching the component. Callable.
+   * @info 会引起更新和渲染的响应式的副作用
    */
   update: ReactiveEffect
   /**
    * The render function that returns vdom tree.
    * @internal
+   * @info 返回 vdom
    */
   render: InternalRenderFunction | null
   /**
@@ -238,13 +300,13 @@ export interface ComponentInternalInstance {
   ssrRender?: Function | null
   /**
    * Object containing values this component provides for its descendents
-   * @internal
+   * @info `provide` 嵌入的 对象
    */
   provides: Data
   /**
    * Tracking reactive effects (e.g. watchers) associated with this component
    * so that they can be automatically stopped on component unmount
-   * @internal
+   * @info  记录所有的副作用`effect`，比如你的`watch`，这样在组件被卸载的时候就能自动解除这些监听
    */
   effects: ReactiveEffect[] | null
   /**

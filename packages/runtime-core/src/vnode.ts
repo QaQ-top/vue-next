@@ -46,16 +46,39 @@ import { convertLegacyVModelProps } from './compat/componentVModel'
 import { defineLegacyVNodeProperties } from './compat/renderFn'
 import { convertLegacyRefInFor } from './compat/ref'
 
+/**
+ * 模板
+ */
 export const Fragment = (Symbol(__DEV__ ? 'Fragment' : undefined) as any) as {
   __isFragment: true
   new (): {
     $props: VNodeProps
   }
 }
+/**
+ * 文本
+ */
 export const Text = Symbol(__DEV__ ? 'Text' : undefined)
+/**
+ * 注释
+ */
 export const Comment = Symbol(__DEV__ ? 'Comment' : undefined)
+/**
+ * 静态内容
+ */
 export const Static = Symbol(__DEV__ ? 'Static' : undefined)
 
+/**
+ * @type string(元素节点)
+ * @type VNode(虚拟节点)
+ * @type Component(组件<配置项>)
+ * @type Text(文本节点)
+ * @type Conmment(文本注释)
+ * @type Static(静态节点)
+ * @type Fragment(模板)
+ * @type TeleportImpl(Telepor组件)
+ * @type SuspenseImpl(Suspense组件)
+ */
 export type VNodeTypes =
   | string
   | VNode
@@ -67,11 +90,17 @@ export type VNodeTypes =
   | typeof TeleportImpl
   | typeof SuspenseImpl
 
+/**
+ * ref 可以是 Ref string function
+ */
 export type VNodeRef =
   | string
   | Ref
   | ((ref: object | null, refs: Record<string, any>) => void)
 
+/**
+ * 绑定在 vnode 上的 ref值 和 当前vnode 组件所在的实例
+ */
 export type VNodeNormalizedRefAtom = {
   i: ComponentInternalInstance
   r: VNodeRef
@@ -96,11 +125,40 @@ export type VNodeProps = {
   ref?: VNodeRef
 
   // vnode hooks
+
+  /**
+   * vnode 挂载前触发
+   * @param vnode 当前 模板元素、组件 的 vnode
+   */
   onVnodeBeforeMount?: VNodeMountHook | VNodeMountHook[]
+  /**
+   * vnode 挂载后触发
+   * @param vnode 当前 模板元素、组件 的 vnode
+   */
   onVnodeMounted?: VNodeMountHook | VNodeMountHook[]
+
+  /**
+   * vnode 更新前触发
+   * @param vnode 新 vnode
+   * @param oldVNode 旧 vnode
+   */
   onVnodeBeforeUpdate?: VNodeUpdateHook | VNodeUpdateHook[]
+  /**
+   * vnode 更新后触发
+   * @param vnode 新 vnode
+   * @param oldVNode 旧 vnode
+   */
   onVnodeUpdated?: VNodeUpdateHook | VNodeUpdateHook[]
+
+  /**
+   * vnode 卸载前触发
+   * @param vnode 当前 模板元素、组件 的 vnode
+   */
   onVnodeBeforeUnmount?: VNodeMountHook | VNodeMountHook[]
+  /**
+   * vnode 卸载后触发
+   * @param vnode 当前 模板元素、组件 的 vnode
+   */
   onVnodeUnmounted?: VNodeMountHook | VNodeMountHook[]
 }
 

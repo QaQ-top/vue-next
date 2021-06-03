@@ -387,7 +387,6 @@ function flushJobs(seen?: CountMap) {
   try {
     for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
       const job = queue[flushIndex]
-      console.dir(job, '执行主任务队列')
       if (job) {
         if (__DEV__ && checkRecursiveUpdates(seen!, job)) {
           continue

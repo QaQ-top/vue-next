@@ -62,6 +62,9 @@ export interface KeepAliveContext extends ComponentRenderContext {
   deactivate: (vnode: VNode) => void
 }
 
+/**
+ * 判断是否是 keep-alive 组件
+ */
 export const isKeepAlive = (vnode: VNode): boolean =>
   (vnode.type as any).__isKeepAlive
 
@@ -90,6 +93,7 @@ const KeepAliveImpl: ComponentOptions = {
 
     // if the internal renderer is not registered, it indicates that this is server-side rendering,
     // for KeepAlive, we just need to render its children
+    // 如果没有 renderer(渲染器) 表示是服务端渲染 直接渲染 子组件
     if (!sharedContext.renderer) {
       return slots.default
     }
