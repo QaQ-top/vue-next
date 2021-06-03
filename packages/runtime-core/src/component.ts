@@ -290,7 +290,7 @@ export interface ComponentInternalInstance {
   /**
    * The render function that returns vdom tree.
    * @internal
-   * @info 返回 vdom
+   * @info 返回 vdom 提供给浏览器渲染成真实dom
    */
   render: InternalRenderFunction | null
   /**
@@ -306,18 +306,18 @@ export interface ComponentInternalInstance {
   /**
    * Tracking reactive effects (e.g. watchers) associated with this component
    * so that they can be automatically stopped on component unmount
-   * @info  记录所有的副作用`effect`，比如你的`watch`，这样在组件被卸载的时候就能自动解除这些监听
+   * @info 记录所有的副作用`effect`，比如你的`watch` `watchEffect` ...，这样在组件被卸载的时候就能自动解除这些监听
    */
   effects: ReactiveEffect[] | null
   /**
    * cache for proxy access type to avoid hasOwnProperty calls
-   * @internal
+   * @info 缓存 代理访问类型 避免 hasOwnProperty 调用
    */
   accessCache: Data | null
   /**
    * cache for render function values that rely on _ctx but won't need updates
    * after initialized (e.g. inline handlers)
-   * @internal
+   *  @info 渲染缓存
    */
   renderCache: (Function | VNode)[]
 
@@ -328,53 +328,75 @@ export interface ComponentInternalInstance {
   components: Record<string, ConcreteComponent> | null
   /**
    * Resolved directive registry, only for components with mixins or extends
-   * @internal
+   * @info 当前组件注册的 `指令`
    */
   directives: Record<string, Directive> | null
   /**
    * Resolved filters registry, v2 compat only
-   * @internal
+   * @info 当前组件注册的 `过滤器`
    */
   filters?: Record<string, Function>
   /**
    * resolved props options
-   * @internal
+   * @info 就是组件自己的 `props` 配置项
    */
   propsOptions: NormalizedPropsOptions
   /**
    * resolved emits options
-   * @internal
+   * @info 就是组件自己的 `emits` 配置项
    */
   emitsOptions: ObjectEmitsOptions | null
 
   // the rest are only for stateful components ---------------------------------
 
   // main proxy that serves as the public instance (`this`)
+  /**
+   * @info 作为公共实例的主要代理（`this`）
+   * @info 开发人员可访问的 "实例"(`this`)
+   */
   proxy: ComponentPublicInstance | null
 
   // exposed properties via expose()
+  /**
+   * 通过 expose() 暴露的属性
+   */
   exposed: Record<string, any> | null
 
   /**
    * alternative proxy used only for runtime-compiled render functions using
    * `with` block
-   * @internal
+   * @info 在使用 `runtime-compiled(template配置项)` 会用这个代替 proxy 使用 `with` 块
    */
   withProxy: ComponentPublicInstance | null
   /**
    * This is the target for the public instance proxy. It also holds properties
    * injected by user options (computed, methods etc.) and user-attached
    * custom properties (via `this.x = ...`)
-   * @internal
+   * @info 公共实例代理的目标
    */
   ctx: Data
 
   // state
+  /**
+   * @info data 函数返回的 数据
+   */
   data: Data
+  /**
+   * @info 接受父组件的参数
+   */
   props: Data
   attrs: Data
+  /**
+   * @info 插槽绑定
+   */
   slots: InternalSlots
+  /**
+   * @info 当前组件内的全部 模板元素 ref 绑定
+   */
   refs: Data
+  /**
+   * @info 触发 父组件 自定义事件
+   */
   emit: EmitFn
   /**
    * used for keeping track of .once event handlers on components
@@ -422,63 +444,72 @@ export interface ComponentInternalInstance {
   asyncResolved: boolean
 
   // lifecycle
+  /**
+   * 是否可以使用 挂载钩子
+   */
   isMounted: boolean
+  /**
+   * 是否可以使用 卸载钩子  KeepAlive时无法使用
+   */
   isUnmounted: boolean
+  /**
+   * 是否可以使用 禁用钩子  KeepAlive时才能使用
+   */
   isDeactivated: boolean
   /**
-   * @internal
+   * @internal 创建前
    */
   [LifecycleHooks.BEFORE_CREATE]: LifecycleHook
   /**
-   * @internal
+   * @internal 创建后
    */
   [LifecycleHooks.CREATED]: LifecycleHook
   /**
-   * @internal
+   * @internal 挂载前
    */
   [LifecycleHooks.BEFORE_MOUNT]: LifecycleHook
   /**
-   * @internal
+   * @internal 挂载后
    */
   [LifecycleHooks.MOUNTED]: LifecycleHook
   /**
-   * @internal
+   * @internal 更新前
    */
   [LifecycleHooks.BEFORE_UPDATE]: LifecycleHook
   /**
-   * @internal
+   * @internal 更新后
    */
   [LifecycleHooks.UPDATED]: LifecycleHook
   /**
-   * @internal
+   * @internal 卸载前
    */
   [LifecycleHooks.BEFORE_UNMOUNT]: LifecycleHook
   /**
-   * @internal
+   * @internal 卸载后
    */
   [LifecycleHooks.UNMOUNTED]: LifecycleHook
   /**
-   * @internal
+   * @internal 渲染依赖跟踪
    */
   [LifecycleHooks.RENDER_TRACKED]: LifecycleHook
   /**
-   * @internal
+   * @internal 更新后 依赖跟踪
    */
   [LifecycleHooks.RENDER_TRIGGERED]: LifecycleHook
   /**
-   * @internal
+   * @internal 启用后
    */
   [LifecycleHooks.ACTIVATED]: LifecycleHook
   /**
-   * @internal
+   * @internal 禁用后
    */
   [LifecycleHooks.DEACTIVATED]: LifecycleHook
   /**
-   * @internal
+   * @internal 错误捕获
    */
   [LifecycleHooks.ERROR_CAPTURED]: LifecycleHook
   /**
-   * @internal
+   * @internal ssr钩子
    */
   [LifecycleHooks.SERVER_PREFETCH]: LifecycleHook<() => Promise<unknown>>
 }

@@ -196,13 +196,26 @@ export interface VNode<
    */
   [ReactiveFlags.SKIP]: true
 
+  /**
+   * vnode 类型
+   */
   type: VNodeTypes
+  /**
+   * vnode 属性 (模板上定义的 attr)
+   */
   props: (VNodeProps & ExtraProps) | null
+  /**
+   * key 标识 vnode 唯一性
+   */
   key: string | number | null
+  /**
+   * 绑定的 ref 值 和 当前 vnode 所在的组件实例
+   */
   ref: VNodeNormalizedRef | null
   /**
    * SFC only. This is assigned on vnode creation using currentScopeId
    * which is set alongside currentRenderingInstance.
+   * @ `<style scoped>` 时将拥有 scopeId
    */
   scopeId: string | null
   /**
@@ -212,30 +225,75 @@ export interface VNode<
    *   inherit the component's slotScopeIds
    */
   slotScopeIds: string[] | null
+  /**
+   * 子 vnode 的集合
+   */
   children: VNodeNormalizedChildren
+  /**
+   * 当前组件的 实例
+   */
   component: ComponentInternalInstance | null
   dirs: DirectiveBinding[] | null
   transition: TransitionHooks<HostElement> | null
 
   // DOM
+  /**
+   * 当前vnode 对应的原生 dom
+   */
   el: HostNode | null
+  /**
+   * 在页面的 锚点 (一般是 el 下一个兄弟节点)
+   */
   anchor: HostNode | null // fragment anchor
+  /**
+   * `teleport` 组件 的目标 元素
+   */
   target: HostElement | null // teleport target
+  /**
+   * `teleport` 的目标 元素 的锚点
+   */
   targetAnchor: HostNode | null // teleport target anchor
+  /**
+   * 静态的 vnode
+   */
   staticCount: number // number of elements contained in a static vnode
 
   // suspense
+  /**
+   * 异步组件
+   */
   suspense: SuspenseBoundary | null
+  /**
+   * 异步组件的 内容
+   */
   ssContent: VNode | null
+  /**
+   * 目前不知道干什么的
+   */
   ssFallback: VNode | null
 
   // optimization only
+  /**
+   * vnode 的类型 shared shapeFlag.ts 有分类
+   */
   shapeFlag: number
+  /**
+   * vnode 的补丁类型 shared patchFlag.ts 有分类
+   */
   patchFlag: number
+  /**
+   * vnode 动态 Props 例如(v-bind)
+   */
   dynamicProps: string[] | null
+  /**
+   * vnode 动态 子vnode
+   */
   dynamicChildren: VNode[] | null
 
   // application root node only
+  /**
+   * 只有应用程序 根节点 的vnode 才有 这个属性
+   */
   appContext: AppContext | null
 }
 

@@ -9,7 +9,7 @@
     >
 
     </div>
-    <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' />
+    <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' :name="'789'" @foo="foo" />
     <input type="range" v-model="r" />
     <input type="text" v-model="g" />
     <input type="range" v-model="b" />
@@ -20,13 +20,9 @@
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, h, Fragment, } from 'vue';
+import { ref, defineComponent } from 'vue';
 
-const Test = defineComponent({
-  setup() {
-    return () => h(Fragment,{},[ h("div", { class: "test"}, "测试"), h("div", { class: "test"}, "测试")]) 
-  }
-})
+import Test from '../test/index.vue';
 
 export default defineComponent({
   name: 'Home',
@@ -50,12 +46,21 @@ export default defineComponent({
       status,
       um: (...arr: any[]) => {
         console.log(arr)
+      },
+      foo: (...array: any[]) => {
+        console.log(array)
       }
     }
   },
   components: {
     Test
-  }
+  },
+  mixins: [{
+    mounted: () => {
+      console.log("FFFFF")
+
+    }
+  }]
 })
 </script>
 

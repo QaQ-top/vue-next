@@ -41,6 +41,14 @@ root.config.errorHandler = (err, vm, info) => {
   console.log('errorHandler', err, vm, info)
 }
 
+root.config.globalProperties = {
+  good: 'FFFF'
+}
+
 console.log(__VITE__GLOBAL__)
+
+root.directive('foo', {
+  mounted: el => {}
+})
 
 root.mount('#root')
