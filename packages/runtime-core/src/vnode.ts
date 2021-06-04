@@ -226,7 +226,7 @@ export interface VNode<
    */
   slotScopeIds: string[] | null
   /**
-   * 子 vnode 的集合
+   * 全部 子 vnode 的集合
    */
   children: VNodeNormalizedChildren
   /**
@@ -282,17 +282,17 @@ export interface VNode<
    */
   patchFlag: number
   /**
-   * vnode 动态 Props 例如(v-bind)
+   * vnode 动态 Props
    */
   dynamicProps: string[] | null
   /**
-   * vnode 动态 子vnode
+   * vnode 动态 子 vnode (拥有动态变化的数据都是 动态 子节点 children 属于 dynamicChildren 的 父集)
    */
   dynamicChildren: VNode[] | null
 
   // application root node only
   /**
-   * 只有应用程序 根节点 的vnode 才有 这个属性
+   * 只有应用程序 根节点 的 vnode 才有 这个属性
    */
   appContext: AppContext | null
 }
@@ -302,7 +302,13 @@ export interface VNode<
 // can divide a template into nested blocks, and within each block the node
 // structure would be stable. This allows us to skip most children diffing
 // and only worry about the dynamic nodes (indicated by patch flags).
+/**
+ * 存储 区块 的栈
+ */
 export const blockStack: (VNode[] | null)[] = []
+/**
+ * 当前 区块
+ */
 let currentBlock: VNode[] | null = null
 
 /**
@@ -321,10 +327,18 @@ let currentBlock: VNode[] | null = null
  *
  * @private
  */
+/**
+ * 在栈中加入 区块 并且让 当前区块 等于 新加入的区块
+ * @info 一般在 `createBlock` 前调用
+ * @param disableTracking 是否禁用跟踪
+ */
 export function openBlock(disableTracking = false) {
   blockStack.push((currentBlock = disableTracking ? null : []))
 }
 
+/**
+ * 出栈一个 区块 并且让 当前区块 等于 最新的栈顶
+ */
 export function closeBlock() {
   blockStack.pop()
   currentBlock = blockStack[blockStack.length - 1] || null
@@ -350,7 +364,7 @@ let shouldTrack = 1
  * )
  * ```
  *
- * @private
+ * @private 设置 区块 跟踪
  */
 export function setBlockTracking(value: number) {
   shouldTrack += value
@@ -361,7 +375,27 @@ export function setBlockTracking(value: number) {
  * A block root keeps track of dynamic nodes within the block in the
  * `dynamicChildren` array.
  *
- * @private
+ * @info 创建区块根节点 动态区块(v-if, v-for, v-bind:key<key是动态的时候>)
+ *
+ * 编译前
+ * ``` html
+ * <template>
+ *   <span v-if="status"> fff </span>
+ *   <div></div>
+ * </template>
+ * ```
+ * 编译后
+ * ``` js
+ * (openBlock(), createBlock(Fragment, null, [
+ *   (ctx.status) ? (openBlock(), createBlock("span", {key: 0}, 'fff') : createCommentVNode("v-if", true),
+ *   createVNode('div', null, []),
+ * ]))
+ * ```
+ * @param type vnode 的类型
+ * @param props vnode 的绑定的属性
+ * @param children vnode 的子节点
+ * @param patchFlag 表示动态数据的类型(动态文本 动态类名 动态属性...)
+ * @param dynamicProps 动态属性
  */
 export function createBlock(
   type: VNodeTypes | ClassComponent,
@@ -378,18 +412,68 @@ export function createBlock(
     dynamicProps,
     true /* isBlock: prevent a block from tracking itself */
   )
-  // save current block children on the block vnode
+  /**
+   * save current block children on the block vnode
+   * 把动态子 设置到 dynamicChildren
+   */
   vnode.dynamicChildren = currentBlock || (EMPTY_ARR as any)
-  // close block
+
+  /**
+   * close block
+   * 结束 当前 区块
+   */
   closeBlock()
   // a block is always going to be patched, so track it as a child of its
   // parent block
+  /**
+   * 如果 是跟踪 并且 当前区块存在 把自己加到该区块
+   */
   if (shouldTrack > 0 && currentBlock) {
     currentBlock.push(vnode)
   }
+
   return vnode
 }
 
+/**
+ * 将 模板编译成 渲 vnode染函数 执行循序
+ * 测试代码
+ * console.log((openBlock(),createBlock("根", {}, [
+ *   (openBlock(), createBlock("一", {},
+ *     [
+ *       createVNode("A", {}),
+ *       createVNode("B", {}),
+ *       (openBlock(), createBlock("C", {})),
+ *     ]
+ *   )),
+ *   createVNode("二", {}),
+ *   createVNode("三", {}),
+ *   createVNode("四", {}),
+ * ])))
+ *
+ * 代码执行顺序: openBlock() -> openBlock()  ->  openBlock()
+ *
+ * 得到的区块: [["根的动态区块"], ["一的动态区块"], ["C的动态区块"]]
+ *
+ * 再执行: createBlock("C", {}) createBlock("一", {}) createBlock("根")
+ *
+ * 先是 C.dynamicChildren = ["C"] ->
+ *        blockStack.pop() -> ['根', '一']
+ *          ["一"].push(C) ->
+ *
+ *      "一".dynamicChildren = ["一"] ->
+ *          blockStack.pop() -> ['根']
+ *            ["根"].push("一") ->
+ *
+ *      "根".dynamicChildren = ["根"] ->
+ *          blockStack.pop() -> []
+ *
+ * 所以”根“的 动态节点 就是 ”一“；然后 ”一“的 动态节点是 ”C“
+ */
+
+/**
+ * @description 判断是否 是 vnode
+ */
 export function isVNode(value: any): value is VNode {
   return value ? value.__v_isVNode === true : false
 }
@@ -429,6 +513,9 @@ export function transformVNodeArgs(transformer?: typeof vnodeArgsTransformer) {
   vnodeArgsTransformer = transformer
 }
 
+/**
+ * 开发环境使用的
+ */
 const createVNodeWithArgsTransform = (
   ...args: Parameters<typeof _createVNode>
 ): VNode => {
@@ -452,10 +539,23 @@ const normalizeRef = ({ ref }: VNodeProps): VNodeNormalizedRefAtom | null => {
     : null) as any
 }
 
+/**
+ * @description 向外暴露的 创建 vnode 的函数
+ */
 export const createVNode = (__DEV__
   ? createVNodeWithArgsTransform
   : _createVNode) as typeof _createVNode
 
+/**
+ * @description 内部创建 vnode 的函数
+ * @param {(VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT)} type vnode的类型 或者是 vnode (`<component :is="vnode"/>` 情况下会是 vnode)
+ * @param {((Data & VNodeProps) | null)} [props=null] 模板上定义的全部属性
+ * @param {unknown} [children=null] 子 vnode
+ * @param {number} [patchFlag=0] 表明 vnode 哪些是 动态的
+ * @param {(string[] | null)} [dynamicProps=null] vnode 上的 动态属性
+ * @param {boolean} [isBlockNode=false] 是否是 区块 节点
+ * @returns {VNode}
+ */
 function _createVNode(
   type: VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT,
   props: (Data & VNodeProps) | null = null,
@@ -464,17 +564,26 @@ function _createVNode(
   dynamicProps: string[] | null = null,
   isBlockNode = false
 ): VNode {
+  /**
+   * vnode 节点类型为空时
+   */
   if (!type || type === NULL_DYNAMIC_COMPONENT) {
     if (__DEV__ && !type) {
       warn(`Invalid vnode type when creating vnode: ${type}.`)
     }
+    // 将 type 设置为注释
     type = Comment
   }
 
+  /**
+   * 判断 type 就是 一个 vnode
+   * `<component :is="vnode"/>` 情况下 type 会是 vnode
+   */
   if (isVNode(type)) {
     // createVNode receiving an existing vnode. This happens in cases like
     // <component :is="vnode"/>
     // #2078 make sure to merge refs during the clone instead of overwriting it
+    // 克隆 当前 vnode
     const cloned = cloneVNode(type, props, true /* mergeRef: true */)
     if (children) {
       normalizeChildren(cloned, children)
@@ -606,6 +715,9 @@ function _createVNode(
   return vnode
 }
 
+/**
+ * 克隆一个 vnode
+ */
 export function cloneVNode<T, U>(
   vnode: VNode<T, U>,
   extraProps?: Data & VNodeProps | null,
