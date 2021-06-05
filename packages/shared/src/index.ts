@@ -158,7 +158,7 @@ const cacheStringFunction = <T extends (str: string) => string>(fn: T): T => {
 
 const camelizeRE = /-(\w)/g
 /**
- * @private 用来解析带 - 的字符串 转为驼峰
+ * @description 用来解析带 - 的字符串 转为驼峰
  */
 export const camelize = cacheStringFunction(
   (str: string): string => {
@@ -168,21 +168,21 @@ export const camelize = cacheStringFunction(
 
 const hyphenateRE = /\B([A-Z])/g
 /**
- * @private 将字符串非第一个单词并且是大小的 转为 小写
+ * @description 将字符串非第一个单词并且是大写的单词 转为 - 加 小写 (fontSize -> font-size)
  */
 export const hyphenate = cacheStringFunction((str: string) =>
   str.replace(hyphenateRE, '-$1').toLowerCase()
 )
 
 /**
- * @private 将字符串 第一个字符转为 大写
+ * @description 将字符串 第一个字符转为 大写
  */
 export const capitalize = cacheStringFunction(
   (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
 )
 
 /**
- * @private
+ * @description
  */
 export const toHandlerKey = cacheStringFunction(
   (str: string) => (str ? `on${capitalize(str)}` : ``)

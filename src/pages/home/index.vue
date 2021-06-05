@@ -9,7 +9,7 @@
     >
 
     </div>
-    <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' :name="'789'" @foo="foo" />
+    <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' :name="'789'" @foo="foo" :styel="[`{backgroundColor: 'red'}`]" />
     <input type="range" v-model="r" />
     <input type="text" v-model="g" />
     <input type="range" v-model="b" />

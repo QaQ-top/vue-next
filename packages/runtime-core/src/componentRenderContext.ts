@@ -7,7 +7,13 @@ import { closeBlock, openBlock } from './vnode'
  * mark the current rendering instance for asset resolution (e.g.
  * resolveComponent, resolveDirective) during render
  */
+/**
+ * 当前渲染的组件实例
+ */
 export let currentRenderingInstance: ComponentInternalInstance | null = null
+/**
+ * 当前组件的命名空间
+ */
 export let currentScopeId: string | null = null
 
 /**

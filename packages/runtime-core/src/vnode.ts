@@ -528,9 +528,17 @@ const createVNodeWithArgsTransform = (
 
 export const InternalObjectKey = `__vInternal`
 
+/**
+ * 复制 key
+ * @description 传入一个 vnode 复制传入vnode的key 并且返回
+ */
 const normalizeKey = ({ key }: VNodeProps): VNode['key'] =>
   key != null ? key : null
 
+/**
+ * 复制 ref
+ * @description 传入一个 vnode 复制传入vnode的 ref 并且 要保证 ref 的 i 是当前渲染的组件实例
+ */
 const normalizeRef = ({ ref }: VNodeProps): VNodeNormalizedRefAtom | null => {
   return (ref != null
     ? isString(ref) || isRef(ref) || isFunction(ref)
@@ -540,7 +548,7 @@ const normalizeRef = ({ ref }: VNodeProps): VNodeNormalizedRefAtom | null => {
 }
 
 /**
- * @description 向外暴露的 创建 vnode 的函数
+ * @description 向外暴露的 创建 vnode 的函数 (如果 type 是一个 vnode 时 返回的将是 多type 克隆后的虚拟节点)
  */
 export const createVNode = (__DEV__
   ? createVNodeWithArgsTransform
@@ -717,6 +725,9 @@ function _createVNode(
 
 /**
  * 克隆一个 vnode
+ * @param vnode 被克隆的 vnode
+ * @param extraProps 额外的 模板属性 (因为被克隆vnode 会有自己的 props 这里要合并)
+ * @param mergeRef 是否合并 ref
  */
 export function cloneVNode<T, U>(
   vnode: VNode<T, U>,
@@ -727,12 +738,19 @@ export function cloneVNode<T, U>(
   // key enumeration cost.
   const { props, ref, patchFlag, children } = vnode
   const mergedProps = extraProps ? mergeProps(props || {}, extraProps) : props
+  /**
+   * 克隆 vnode
+   */
   const cloned: VNode = {
     __v_isVNode: true,
     __v_skip: true,
+    // 克隆 vnode 类型
     type: vnode.type,
+    // 克隆 vnode props 并且 经过合并处理 后的props
     props: mergedProps,
+    // 克隆 vnode key
     key: mergedProps && normalizeKey(mergedProps),
+    // 对 额外props 中的 ref 处理后 并且合并
     ref:
       extraProps && extraProps.ref
         ? // #2078 in the case of <component :is="vnode" ref="extra"/>
@@ -744,8 +762,11 @@ export function cloneVNode<T, U>(
             : [ref, normalizeRef(extraProps)!]
           : normalizeRef(extraProps)
         : ref,
+    // 克隆 vnode 的 scopeId
     scopeId: vnode.scopeId,
+    // 克隆 vnode 的 slotScopeIds
     slotScopeIds: vnode.slotScopeIds,
+    // 克隆 vnode 的 children
     children:
       __DEV__ && patchFlag === PatchFlags.HOISTED && isArray(children)
         ? (children as VNode[]).map(deepCloneVNode)
@@ -911,29 +932,55 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
   vnode.shapeFlag |= type
 }
 
+/**
+ * 合并 多个 Props
+ * @param args 第一个是 被克隆vnode 的 props 剩余的全是 额外添加 props
+ */
 export function mergeProps(...args: (Data & VNodeProps)[]) {
+  /**
+   * 第一个是 最终返回 props
+   * 剩余的props将合并 到 第一个props
+   */
   const ret = extend({}, args[0])
   for (let i = 1; i < args.length; i++) {
     const toMerge = args[i]
     for (const key in toMerge) {
+      // 处理 class (后者会覆盖 前者)
       if (key === 'class') {
         if (ret.class !== toMerge.class) {
           ret.class = normalizeClass([ret.class, toMerge.class])
         }
+
+        // 处理 style (后者会覆盖 前者)
       } else if (key === 'style') {
         ret.style = normalizeStyle([ret.style, toMerge.style])
+
+        // 处理 事件 (事件是合并 成数组)
       } else if (isOn(key)) {
+        /**
+         * props key的 事件函数
+         */
         const existing = ret[key]
+        /**
+         * 额外的props key的 事件函数
+         */
         const incoming = toMerge[key]
+
+        // 两个事件函数不相同时
         if (existing !== incoming) {
+          // 如果 props 本来就有一个 与 额外的props 相同的事件 并且绑定的有函数
+          // 那么就 将额外props上这个事件的函数 和 props上这个事件上的函数 合并 并且 赋值给 props 上的这个事件
           ret[key] = existing
             ? [].concat(existing as any, incoming as any)
             : incoming
         }
+
+        // 其他属性直接 覆盖
       } else if (key !== '') {
         ret[key] = toMerge[key]
       }
     }
   }
+  // 返回 props
   return ret
 }
