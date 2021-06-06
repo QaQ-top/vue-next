@@ -9,7 +9,20 @@
     >
 
     </div>
-    <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' :name="'789'" @foo="foo" :styel="[`{backgroundColor: 'red'}`]" />
+    
+    <Teleport to="body">
+      <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' :name="'789'" @foo="foo" :styel="[`{backgroundColor: 'red'}`]">
+      <template v-slot:title>
+        <h1>标题</h1>
+      </template>
+      <template v-slot:default>
+        <slot></slot>
+      </template>
+      <template v-slot:footer>
+        <h4>底部</h4>
+      </template>
+    </Test>
+    </Teleport>
     <input type="range" v-model="r" />
     <input type="text" v-model="g" />
     <input type="range" v-model="b" />

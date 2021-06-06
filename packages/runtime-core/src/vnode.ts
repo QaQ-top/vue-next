@@ -594,6 +594,7 @@ function _createVNode(
     // 克隆 当前 vnode
     const cloned = cloneVNode(type, props, true /* mergeRef: true */)
     if (children) {
+      //
       normalizeChildren(cloned, children)
     }
     return cloned
@@ -779,6 +780,9 @@ export function cloneVNode<T, U>(
     // existing patch flag to be reliable and need to add the FULL_PROPS flag.
     // note: perserve flag for fragments since they use the flag for children
     // fast paths only.
+
+    // 判断是否 使用了 extraProps(额外 props) 并且不是 Fragment
+    // 这个时候就要 兼容 克隆的 patchFlag 添加 PatchFlags.FULL_PROPS 类型
     patchFlag:
       extraProps && vnode.type !== Fragment
         ? patchFlag === -1 // hoisted node
@@ -797,6 +801,7 @@ export function cloneVNode<T, U>(
     // they will simply be overwritten.
     component: vnode.component,
     suspense: vnode.suspense,
+    // 这个地方要 深度克隆
     ssContent: vnode.ssContent && cloneVNode(vnode.ssContent),
     ssFallback: vnode.ssFallback && cloneVNode(vnode.ssFallback),
     el: vnode.el,
@@ -805,12 +810,15 @@ export function cloneVNode<T, U>(
   if (__COMPAT__) {
     defineLegacyVNodeProperties(cloned)
   }
+  // 返回克隆后的 vnode
   return cloned as any
 }
 
 /**
  * Dev only, for HMR of hoisted vnodes reused in v-for
  * https://github.com/vitejs/vite/issues/2022
+ *
+ * @description 深度克隆 vnode
  */
 function deepCloneVNode(vnode: VNode): VNode {
   const cloned = cloneVNode(vnode)
@@ -821,14 +829,17 @@ function deepCloneVNode(vnode: VNode): VNode {
 }
 
 /**
- * @private
+ * @description 提供 字符串 创建 文本 vnode
+ * @param flag 动态类型标识 (patchFlag)
  */
 export function createTextVNode(text: string = ' ', flag: number = 0): VNode {
   return createVNode(Text, null, text, flag)
 }
+console.log(createVNode('div', null, 'ffff', 0))
 
 /**
- * @private
+ * @description 创建静态 文本 vnode
+ * @param numberOfNodes 静态节点数量
  */
 export function createStaticVNode(
   content: string,
@@ -842,7 +853,8 @@ export function createStaticVNode(
 }
 
 /**
- * @private
+ * @description 注释类型 vnode
+ * @param asBlock 是否是动态变化的 (是否创建 区块)
  */
 export function createCommentVNode(
   text: string = '',
@@ -855,17 +867,28 @@ export function createCommentVNode(
     : createVNode(Comment, null, text)
 }
 
+/**
+ * @description 标准化处理 子vnode
+ *
+ */
 export function normalizeVNode(child: VNodeChild): VNode {
+  // 子为空 处理成 注释 再返回
   if (child == null || typeof child === 'boolean') {
     // empty placeholder
     return createVNode(Comment)
+
+    // 子是数组 就包裹一层 Fragment 再返回
   } else if (isArray(child)) {
     // fragment
     return createVNode(Fragment, null, child)
+
+    // 子是对象 存在el 就对子克隆后返回 没有el 就直接返回
   } else if (typeof child === 'object') {
     // already vnode, this should be the most common since compiled templates
     // always produce all-vnode children arrays
     return child.el === null ? child : cloneVNode(child)
+
+    // 其他情况处理成 文本 再返回
   } else {
     // strings and numbers
     return createVNode(Text, null, String(child))
@@ -873,38 +896,57 @@ export function normalizeVNode(child: VNodeChild): VNode {
 }
 
 // optimized normalization for template-compiled render fns
+/**
+ * @description 为模板编译的渲染文件进行优化的规范化处理
+ */
 export function cloneIfMounted(child: VNode): VNode {
   return child.el === null ? child : cloneVNode(child)
 }
 
+/**
+ * @description 标准化处理 children 和 shapeFlag 将其 设置再 目标vnode身上
+ * @param vnode 目标 vnode
+ * @param children 子 vnode
+ */
 export function normalizeChildren(vnode: VNode, children: unknown) {
   let type = 0
   const { shapeFlag } = vnode
   if (children == null) {
     children = null
+
+    // children 是数组
   } else if (isArray(children)) {
     type = ShapeFlags.ARRAY_CHILDREN
+
+    // children 是对象 (似乎只有 slot 的情况下 children才会是对象)
   } else if (typeof children === 'object') {
     if (shapeFlag & ShapeFlags.ELEMENT || shapeFlag & ShapeFlags.TELEPORT) {
-      // Normalize slot to plain children for plain element and Teleport
+      // 如果 vnode 是 dom 或者 Teleport组件
       const slot = (children as any).default
+
+      // 如果存在默认插槽 就将 插槽里面的 vnode 添加到 当前vnode
       if (slot) {
         // _c marker is added by withCtx() indicating this is a compiled slot
+        // withCtx()添加了_c标记，表明这是一个已编译的槽
         slot._c && setCompiledSlotRendering(1)
         normalizeChildren(vnode, slot())
         slot._c && setCompiledSlotRendering(-1)
       }
       return
     } else {
+      // 处理插槽
       type = ShapeFlags.SLOTS_CHILDREN
       const slotFlag = (children as RawSlots)._
+
       if (!slotFlag && !(InternalObjectKey in children!)) {
+        // 标准化插槽
         // if slots are not normalized, attach context instance
         // (compiled / normalized slots already have context)
         ;(children as RawSlots)._ctx = currentRenderingInstance
       } else if (slotFlag === SlotFlags.FORWARDED && currentRenderingInstance) {
         // a child component receives forwarded slots from the parent.
         // its slot type is determined by its parent's slot type.
+        // 子组件从父组件接收转发的槽，其槽的类型由其父组件的槽类型决定
         if (
           currentRenderingInstance.vnode.patchFlag & PatchFlags.DYNAMIC_SLOTS
         ) {
@@ -915,7 +957,9 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
         }
       }
     }
+    // children 是函数
   } else if (isFunction(children)) {
+    // 将函数 变成 默认插槽 并且加上 当前实例
     children = { default: children, _ctx: currentRenderingInstance }
     type = ShapeFlags.SLOTS_CHILDREN
   } else {

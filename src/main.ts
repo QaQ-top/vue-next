@@ -17,7 +17,7 @@ import './themes/index.scss'
 import App from '@src/pages/home/index.vue'
 const root = createApp({
   render: () => {
-    return h(App)
+    return h(App, 'App 传递')
   },
   setup: () => {
     /**

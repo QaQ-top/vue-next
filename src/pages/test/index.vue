@@ -1,12 +1,13 @@
 <template>
   <div>
-    测试
-    {{name}}
+    <slot name="title" ></slot>
+    <div class="box"><slot></slot></div>
+    <slot name="footer"></slot>
   </div>
 </template>
 
 <script lang="ts" >
-import { defineComponent, onMounted, provide } from 'vue';
+import { defineComponent, provide } from 'vue';
 
 export default defineComponent({
   name: "Test",
@@ -40,5 +41,7 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-
+  .box {
+    color: blueviolet;
+  }
 </style>
