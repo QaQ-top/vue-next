@@ -431,84 +431,146 @@ function resolvePropValue(
   return value
 }
 
+/**
+ * @description 处理 全局mixins 和 组件自己的mixins extends, 再验证 props的格式是否正确
+ * @param {ConcreteComponent} comp 组件的 配置项
+ * @param {AppContext} appContext 全局上下文(全局配置)
+ * @param {boolean} [asMixin=false] 是否 mixin
+ * @returns {NormalizedPropsOptions} 返回 propsOptions
+ */
 export function normalizePropsOptions(
   comp: ConcreteComponent,
   appContext: AppContext,
   asMixin = false
 ): NormalizedPropsOptions {
+  // 判断是否 存在缓存 避免重复处理
   if (!appContext.deopt && comp.__props) {
     return comp.__props
   }
-
+  /**
+   * props 配置
+   * ``` js
+   * {
+   *   props: {
+   *     foo: {
+   *       type: String,
+   *       default: "45"
+   *     }
+   *   }
+   * }
+   * ```
+   */
   const raw = comp.props
+
+  /**
+   * props
+   */
   const normalized: NormalizedPropsOptions[0] = {}
+  /**
+   * props 中的 key
+   */
   const needCastKeys: NormalizedPropsOptions[1] = []
 
   // apply mixin/extends props
   let hasExtends = false
+
+  // 非函数时处理 (主要是 在判断里面 处理 mixins extend)
   if (__FEATURE_OPTIONS_API__ && !isFunction(comp)) {
+    /**
+     * 用来 处理 mixins 和 extends 中的 props
+     */
     const extendProps = (raw: ComponentOptions) => {
       if (__COMPAT__ && isFunction(raw)) {
         raw = raw.options
       }
       hasExtends = true
       const [props, keys] = normalizePropsOptions(raw, appContext, true)
+      // 合并 props
       extend(normalized, props)
+      // keys 肯能 undefined
       if (keys) needCastKeys.push(...keys)
     }
+    // 主要是 过滤多次处理 全局 mixins (因为默认第一次处理，后续递归函数 不需要处理了)
     if (!asMixin && appContext.mixins.length) {
       appContext.mixins.forEach(extendProps)
     }
+    // 处理 extends
     if (comp.extends) {
       extendProps(comp.extends)
     }
+    // 处理组件 组件的 mixins
     if (comp.mixins) {
       comp.mixins.forEach(extendProps)
     }
   }
 
+  // 没有 props 并且 不是进行递归 获取 mixnis dxteds 的 props
   if (!raw && !hasExtends) {
+    // 直接返回 comp 并且表示 已经处理 __props
     return (comp.__props = EMPTY_ARR as any)
   }
 
+  // 如果 props 数组 ( props: ["name", "title"] )
   if (isArray(raw)) {
     for (let i = 0; i < raw.length; i++) {
       if (__DEV__ && !isString(raw[i])) {
+        // 开发环境下同时 使用数组语法时，props 必须是字符串。
         warn(`props must be strings when using array syntax.`, raw[i])
       }
+      // 用来解析带 - 的字符串 转为驼峰
       const normalizedKey = camelize(raw[i])
+      // 验证 props 名称 是否标准
       if (validatePropName(normalizedKey)) {
+        // 设置 props
         normalized[normalizedKey] = EMPTY_OBJ
       }
     }
   } else if (raw) {
+    // 不上 数组 就只能是对象了
     if (__DEV__ && !isObject(raw)) {
       warn(`invalid props options`, raw)
     }
+    // 循环处理 对象的 key
     for (const key in raw) {
+      // 处理 - 为 驼峰名命
       const normalizedKey = camelize(key)
+      // 验证 props 的 key 是否 标准
       if (validatePropName(normalizedKey)) {
+        /**
+         * key 的值
+         */
         const opt = raw[key]
+        /**
+         * 值为 函数或者数组 的 处理成对象 ( props: { name: Number, hobby: [Number, String ...] } )
+         * @info 处理后 的 opt
+         */
         const prop: NormalizedProp = (normalized[normalizedKey] =
           isArray(opt) || isFunction(opt) ? { type: opt } : opt)
         if (prop) {
           const booleanIndex = getTypeIndex(Boolean, prop.type)
           const stringIndex = getTypeIndex(String, prop.type)
+          // prop[0] = 是否存在 Boolean 类型
+          // prop[1] = 不存在 String 或者 只存在 Boolean
           prop[BooleanFlags.shouldCast] = booleanIndex > -1
           prop[BooleanFlags.shouldCastTrue] =
             stringIndex < 0 || booleanIndex < stringIndex
           // if the prop needs boolean casting or default value
           if (booleanIndex > -1 || hasOwn(prop, 'default')) {
+            // 如果 有默认值 或者 类型是 Boolean
             needCastKeys.push(normalizedKey)
           }
         }
       }
     }
   }
-
   return (comp.__props = [normalized, needCastKeys])
 }
 
+/**
+ * @description 验证 props 名称 (保证不能是 $ 开头)
+ * @param {string} key props 的名称
+ * @returns boolean
+ */
 function validatePropName(key: string) {
   if (key[0] !== '$') {
     return true
@@ -520,15 +582,27 @@ function validatePropName(key: string) {
 
 // use function string name to check type constructors
 // so that it works across vms / iframes.
+/**
+ * @description 获取类型 (Number, Map, Set ...)
+ */
 function getType(ctor: Prop<any>): string {
   const match = ctor && ctor.toString().match(/^\s*function (\w+)/)
   return match ? match[1] : ''
 }
 
+/**
+ * @description 判断两个类型 是否相等
+ */
 function isSameType(a: Prop<any>, b: Prop<any>): boolean {
   return getType(a) === getType(b)
 }
 
+/**
+ * @description 判断 类型是否符合 -1 不符合 其它大于 -1 都是符合
+ * @param {Prop<any>} type 类型
+ * @param {(PropType<any> | void | null | true)} expectedTypes props key的 type
+ * @returns {number} -1 | 任意大于 -1 的数
+ */
 function getTypeIndex(
   type: Prop<any>,
   expectedTypes: PropType<any> | void | null | true

@@ -17,7 +17,7 @@ import './themes/index.scss'
 import App from '@src/pages/home/index.vue'
 const root = createApp({
   render: () => {
-    return h(App, 'App 传递')
+    return h(App, () => 'App 传递')
   },
   setup: () => {
     /**
@@ -47,8 +47,17 @@ root.config.globalProperties = {
 
 console.log(__VITE__GLOBAL__)
 
+root.component('GlobalComponent', {
+  name: 'GlobalComponent',
+  render: () => {
+    return 'GlobalComponent'
+  }
+})
+
 root.directive('foo', {
   mounted: el => {}
 })
+
+root.config
 
 root.mount('#root')

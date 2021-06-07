@@ -182,7 +182,8 @@ export const capitalize = cacheStringFunction(
 )
 
 /**
- * @description
+ * @description 将字符串 第一个字符转为 大写 并且 在前面加上 on
+ * @info 方便 读取 props 上绑定的 方法
  */
 export const toHandlerKey = cacheStringFunction(
   (str: string) => (str ? `on${capitalize(str)}` : ``)

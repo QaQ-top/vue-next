@@ -594,13 +594,14 @@ function _createVNode(
     // 克隆 当前 vnode
     const cloned = cloneVNode(type, props, true /* mergeRef: true */)
     if (children) {
-      //
+      // 将子元素 赋值 给 克隆后的 vnode
       normalizeChildren(cloned, children)
     }
     return cloned
   }
 
   // class component normalization.
+  // 如果是 规范的 class 组件
   if (isClassComponent(type)) {
     type = type.__vccOpts
   }
@@ -835,7 +836,6 @@ function deepCloneVNode(vnode: VNode): VNode {
 export function createTextVNode(text: string = ' ', flag: number = 0): VNode {
   return createVNode(Text, null, text, flag)
 }
-console.log(createVNode('div', null, 'ffff', 0))
 
 /**
  * @description 创建静态 文本 vnode
@@ -963,8 +963,10 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
     children = { default: children, _ctx: currentRenderingInstance }
     type = ShapeFlags.SLOTS_CHILDREN
   } else {
+    // 如果 是 其它 基础类型的数据 就转为 字符串
     children = String(children)
     // force teleport children to array so it can be moved around
+    // 如果 vnode 是 Teleport 就把 子 转成 数组 TextVNode
     if (shapeFlag & ShapeFlags.TELEPORT) {
       type = ShapeFlags.ARRAY_CHILDREN
       children = [createTextVNode(children as string)]
@@ -972,6 +974,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
       type = ShapeFlags.TEXT_CHILDREN
     }
   }
+  // 最后赋值 给 vnode
   vnode.children = children as VNodeNormalizedChildren
   vnode.shapeFlag |= type
 }

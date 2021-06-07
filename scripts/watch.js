@@ -31,6 +31,8 @@ function getPaths(path) {
   return []
 }
 
+const building = {}
+
 function runBuild(paths) {
   if (paths.length) {
     const [target] = paths.slice(0, 1)
@@ -38,6 +40,12 @@ function runBuild(paths) {
     timeout.set(
       target,
       setTimeout(() => {
+        if (!building[target]) {
+          building[target] = true
+        } else {
+          chalk.yellow.bold(`\r\n${target}/src 源代码已在打包中!!!`)
+          return
+        }
         console.log(
           chalk.blue.bold(`\r\n${target}/src 源代码已经更新`, '打包进行中...')
         )
@@ -52,6 +60,7 @@ function runBuild(paths) {
             )
           })
           .catch(e => {
+            building[target] = false
             console.log(chalk.red.bold(`✖ yarn ${target}`, '打包失败'))
           })
       }, 500)

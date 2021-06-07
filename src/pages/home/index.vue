@@ -11,7 +11,7 @@
     </div>
     
     <Teleport to="body">
-      <Test v-if="status" ref='test' :onVnodeBeforeUnmount='um' :name="'789'" @foo="foo" :styel="[`{backgroundColor: 'red'}`]">
+      <Test v-if="status" v-model.lazy="r" ref='test' :onVnodeBeforeUnmount='um'  @foo="foo" :styel="[`{backgroundColor: 'red'}`]" class="test" foo="fsadf">
       <template v-slot:title>
         <h1>标题</h1>
       </template>

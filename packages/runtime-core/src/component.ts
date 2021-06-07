@@ -252,7 +252,7 @@ export interface ComponentInternalInstance {
    */
   uid: number
   /**
-   * @info 组件类型
+   * @info 组件类型 (其实就个组件的 配置项)
    */
   type: ConcreteComponent
   /**
@@ -311,7 +311,7 @@ export interface ComponentInternalInstance {
   effects: ReactiveEffect[] | null
   /**
    * cache for proxy access type to avoid hasOwnProperty calls
-   * @info 缓存 代理访问类型 避免 hasOwnProperty 调用
+   * @info 渲染代理的属性访问缓存
    */
   accessCache: Data | null
   /**
@@ -323,7 +323,7 @@ export interface ComponentInternalInstance {
 
   /**
    * Resolved component registry, only for components with mixins or extends
-   * @internal
+   * @info 当前组件注册的 `组件`
    */
   components: Record<string, ConcreteComponent> | null
   /**
@@ -382,9 +382,12 @@ export interface ComponentInternalInstance {
    */
   data: Data
   /**
-   * @info 接受父组件的参数
+   * @info 接受父组件的参数 (setup 第一个参数)
    */
   props: Data
+  /**
+   * @info 过滤掉 `props 属性` `绑定事件` 后 剩下的 属性绑定
+   */
   attrs: Data
   /**
    * @info 插槽绑定
@@ -400,13 +403,13 @@ export interface ComponentInternalInstance {
   emit: EmitFn
   /**
    * used for keeping track of .once event handlers on components
-   * @internal
+   * @info 用于跟踪组件上的.once事件处理程序
    */
   emitted: Record<string, boolean> | null
   /**
    * used for caching the value returned from props default factory functions to
    * avoid unnecessary watcher trigger
-   * @internal
+   * @info 用于缓存从 props 默认值，以避免不必要的观察者触发
    */
   propsDefaults: Data
   /**
@@ -420,26 +423,26 @@ export interface ComponentInternalInstance {
    */
   devtoolsRawSetupState?: any
   /**
-   * @internal
+   * @info 这个就是 setup 第二个参数
    */
   setupContext: SetupContext | null
 
   /**
    * suspense related
-   * @internal
+   * @info suspense组件 相关
    */
   suspense: SuspenseBoundary | null
   /**
    * suspense pending batch id
-   * @internal
+   * @info suspense组件 id
    */
   suspenseId: number
   /**
-   * @internal
+   * @info suspense组件 异步依赖
    */
   asyncDep: Promise<any> | null
   /**
-   * @internal
+   * @info suspense组件 异步依赖是否都已处理
    */
   asyncResolved: boolean
 
@@ -518,6 +521,13 @@ const emptyAppContext = createAppContext()
 
 let uid = 0
 
+/**
+ * @description 创建组件实例
+ * @param {VNode} vnode 当前组件的 vnode
+ * @param {(ComponentInternalInstance | null)} parent 当前组件的 父组件实例
+ * @param {(SuspenseBoundary | null)} suspense 似乎都是 null
+ * @returns 当前 vnode 对应的 组件实例
+ */
 export function createComponentInstance(
   vnode: VNode,
   parent: ComponentInternalInstance | null,
@@ -525,14 +535,21 @@ export function createComponentInstance(
 ) {
   const type = vnode.type as ConcreteComponent
   // inherit parent app context - or - if root, adopt from root vnode
+  // 继承 全局上下文 (全局配置) 如果没有父级 或者 vnode 没有配置 appContext
+  // 默认 emptyAppContext
   const appContext =
     (parent ? parent.appContext : vnode.appContext) || emptyAppContext
 
   const instance: ComponentInternalInstance = {
+    // 组件id (根据创建次数自增)
     uid: uid++,
+    // 组件的 vnode
     vnode,
+    // 组件的 类型
     type,
+    // 组件的 父组件
     parent,
+    // 全局配置
     appContext,
     root: null!, // to be immediately set
     next: null,
@@ -543,6 +560,7 @@ export function createComponentInstance(
     exposed: null,
     withProxy: null,
     effects: null,
+    // 继承 父级 parent.provides
     provides: parent ? parent.provides : Object.create(appContext.provides),
     accessCache: null!,
     renderCache: [],
@@ -552,6 +570,7 @@ export function createComponentInstance(
     directives: null,
 
     // resolved props and emits options
+    // 解析 并且 验证 props emits
     propsOptions: normalizePropsOptions(type, appContext),
     emitsOptions: normalizeEmitsOptions(type, appContext),
 
@@ -605,7 +624,7 @@ export function createComponentInstance(
   }
   instance.root = parent ? parent.root : instance
   instance.emit = emit.bind(null, instance)
-
+  console.log(instance)
   return instance
 }
 
@@ -1014,6 +1033,9 @@ export function formatComponentName(
   return name ? classify(name) : isRoot ? `App` : `Anonymous`
 }
 
+/**
+ * @description 判断是否是 规范的 class 组件
+ */
 export function isClassComponent(value: unknown): value is ClassComponent {
   return isFunction(value) && '__vccOpts' in value
 }
