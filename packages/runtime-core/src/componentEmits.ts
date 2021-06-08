@@ -231,8 +231,10 @@ export function normalizeEmitsOptions(
   asMixin = false
 ): ObjectEmitsOptions | null {
   // 判断是否 存在缓存 避免重复处理
-  if (!appContext.deopt && comp.__emits !== undefined) {
-    return comp.__emits
+  const cache = appContext.emitsCache
+  const cached = cache.get(comp)
+  if (cached !== undefined) {
+    return cached
   }
 
   /**
@@ -274,7 +276,8 @@ export function normalizeEmitsOptions(
   }
   // emits 为空 并且 不是递归获取 mixins extends 的 emits
   if (!raw && !hasExtends) {
-    return (comp.__emits = null)
+    cache.set(comp, null)
+    return null
   }
 
   // 处理 emits 不同类型的值 {emits: ['foo', 'end']} {emits: {foo: () => boolean, end: () => boolean}}
@@ -283,8 +286,10 @@ export function normalizeEmitsOptions(
   } else {
     extend(normalized, raw)
   }
+  // 设置当前 组件的 emits 处理后的 缓存
+  cache.set(comp, normalized)
   // 返回处理后的 emits
-  return (comp.__emits = normalized)
+  return normalized
 }
 
 // Check if an incoming prop key is a declared emit event listener.

@@ -3,11 +3,13 @@ import { isArray } from '@vue/shared'
 import { ComponentPublicInstance } from './componentPublicInstance'
 import { ComponentInternalInstance, getComponentName } from './component'
 import { warn } from './warning'
+import { ReactiveEffect } from '@vue/reactivity'
 
-export interface SchedulerJob {
-  (): void
+export interface SchedulerJob extends Function, Partial<ReactiveEffect> {
   /**
-   * unique job id, only present on raw effects, e.g. component render effect
+   * Attached by renderer.ts when setting up a component's render effect
+   * Used to obtain component information when reporting max recursive updates.
+   * dev only.
    */
   id?: number
   /**
@@ -387,7 +389,7 @@ function flushJobs(seen?: CountMap) {
   try {
     for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
       const job = queue[flushIndex]
-      if (job) {
+      if (job && job.active !== false) {
         if (__DEV__ && checkRecursiveUpdates(seen!, job)) {
           continue
         }
@@ -410,7 +412,11 @@ function flushJobs(seen?: CountMap) {
     // some postFlushCb queued jobs!
     // keep flushing until it drains.
     // 在后置任务执行完后 判断是否有新的 主任务 和 后置任务
-    if (queue.length || pendingPostFlushCbs.length) {
+    if (
+      queue.length ||
+      pendingPreFlushCbs.length ||
+      pendingPostFlushCbs.length
+    ) {
       flushJobs(seen)
     }
   }

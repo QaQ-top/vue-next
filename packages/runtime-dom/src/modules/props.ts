@@ -51,6 +51,9 @@ export function patchDOMProp(
     if (el.value !== newValue) {
       el.value = newValue
     }
+    if (value == null) {
+      el.removeAttribute(key)
+    }
     return
   }
 

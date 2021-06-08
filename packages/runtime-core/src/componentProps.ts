@@ -493,7 +493,7 @@ function resolvePropValue(
 }
 
 /**
- * @description 处理 全局mixins 和 组件自己的mixins extends, 再验证 props的格式是否正确
+ * @description 处理 全局mixins 和 组件自己的 mixins extends, 再验证 props的格式是否正确
  * @param {ConcreteComponent} comp 组件的 配置项
  * @param {AppContext} appContext 全局上下文(全局配置)
  * @param {boolean} [asMixin=false] 是否 mixin
@@ -505,8 +505,10 @@ export function normalizePropsOptions(
   asMixin = false
 ): NormalizedPropsOptions {
   // 判断是否 存在缓存 避免重复处理
-  if (!appContext.deopt && comp.__props) {
-    return comp.__props
+  const cache = appContext.propsCache
+  const cached = cache.get(comp)
+  if (cached) {
+    return cached
   }
   /**
    * props 配置
@@ -568,7 +570,8 @@ export function normalizePropsOptions(
   // 没有 props 并且 不是进行递归 获取 mixnis dxteds 的 props
   if (!raw && !hasExtends) {
     // 直接返回 comp 并且表示 已经处理 __props
-    return (comp.__props = EMPTY_ARR as any)
+    cache.set(comp, EMPTY_ARR as any)
+    return EMPTY_ARR as any
   }
 
   // 如果 props 数组 ( props: ["name", "title"] )
@@ -624,7 +627,11 @@ export function normalizePropsOptions(
       }
     }
   }
-  return (comp.__props = [normalized, needCastKeys])
+
+  const res: NormalizedPropsOptions = [normalized, needCastKeys]
+  // 设置 处理后 props 的缓存
+  cache.set(comp, res)
+  return res
 }
 
 /**
