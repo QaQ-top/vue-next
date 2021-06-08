@@ -43,7 +43,9 @@ function runBuild(paths) {
         if (!building[target]) {
           building[target] = true
         } else {
-          chalk.yellow.bold(`\r\n${target}/src 源代码已在打包中!!!`)
+          console.log(
+            chalk.yellow.bold(`\r\n${target}/src 源代码已在打包中!!!`)
+          )
           return
         }
         console.log(
@@ -60,8 +62,10 @@ function runBuild(paths) {
             )
           })
           .catch(e => {
-            building[target] = false
             console.log(chalk.red.bold(`✖ yarn ${target}`, '打包失败'))
+          })
+          .finally(() => {
+            building[target] = false
           })
       }, 500)
     )

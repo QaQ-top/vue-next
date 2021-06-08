@@ -49,10 +49,10 @@ export type EmitFn<
       >
 
 /**
- * @description 触发 组件自定义 事件 (cxt.emit)
- * @param {ComponentInternalInstance} instance
+ * @description 触发 组件自定义 事件 (cxt.emit, this.$emit)
+ * @param {ComponentInternalInstance} instance 当前实例 (在创建实例时会使用 bind() 绑定该实例)
  * @param {string} event 事件名称
- * @param {...any[]} rawArgs
+ * @param {...any[]} rawArgs 参数
  * @returns
  */
 export function emit(
@@ -290,10 +290,18 @@ export function normalizeEmitsOptions(
 // Check if an incoming prop key is a declared emit event listener.
 // e.g. With `emits: { click: null }`, props named `onClick` and `onclick` are
 // both considered matched listeners.
+
+/**
+ * @description 判断 是否是 emit 事件
+ * @param {(ObjectEmitsOptions | null)} options emistOptions 配置项
+ * @param {string} key 属性的名称
+ * @returns {boolean} true || false
+ */
 export function isEmitListener(
   options: ObjectEmitsOptions | null,
   key: string
 ): boolean {
+  // 没有配置项 或者 key 不是 on开头 就不是 事件
   if (!options || !isOn(key)) {
     return false
   }

@@ -11,7 +11,7 @@
     </div>
     
     <Teleport to="body">
-      <Test v-if="status" v-model.lazy="r" ref='test' :onVnodeBeforeUnmount='um'  @foo="foo" :styel="[`{backgroundColor: 'red'}`]" class="test" foo="fsadf">
+      <Test v-if="status" v-model.lazy="r" :onVnodeBeforeUnmount='um'  @foo="foo" :styel="[`{backgroundColor: 'red'}`]" class="test" foo="fsadf">
       <template v-slot:title>
         <h1>标题</h1>
       </template>
@@ -48,7 +48,6 @@ export default defineComponent({
     const b = ref(0);
 
     const status = ref(false);
-
     
     return {
       test,

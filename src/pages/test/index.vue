@@ -1,15 +1,15 @@
 <template>
   <div>
-    {{modelValue}}
+    {{types}}
     <slot name="title" ></slot>
-    <div class="box"><slot></slot></div>
+    <div :class="$style.box" :onVnodeBeforeMount="()=>{}" ><slot></slot></div>
     <slot name="footer"></slot>
     <Go />
   </div>
 </template>
 
 <script lang="ts" >
-import { defineComponent, h, provide } from 'vue';
+import { defineComponent, h, provide, useCssModule } from 'vue';
 
 export default defineComponent({
   name: "Test",
@@ -18,8 +18,17 @@ export default defineComponent({
       type: String,
       default: "54"
     },
+    types: {
+      type: [String,Boolean],
+    },
     modelValue: {
-
+      
+    },
+    eky: {
+      default: (props: any) => {
+        console.log(props.eky)
+        return "454"
+      }
     }
   },
   emits: {
@@ -50,7 +59,7 @@ export default defineComponent({
   },
   mixins:[
     {
-      
+      props: ["mixins"]
     }
   ],
   components: {
@@ -64,7 +73,9 @@ export default defineComponent({
   deactivated() {
     console.log(this)
   },
-  setup(props, ctx) {
+  setup(...arr) {
+    console.log(arr)
+    const [props, ctx] = arr;
     ctx.emit('foo', 1,2,3,4,5)
     ctx.emit('update:modelValue', 100)
     provide('test_provide', {
@@ -74,7 +85,7 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss" scoped module>
   .box {
     color: blueviolet;
   }

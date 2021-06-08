@@ -372,7 +372,7 @@ export interface ComponentInternalInstance {
    * This is the target for the public instance proxy. It also holds properties
    * injected by user options (computed, methods etc.) and user-attached
    * custom properties (via `this.x = ...`)
-   * @info 公共实例代理的目标
+   * @info 公共实例代理的目标 ( 实例的proxy = new Proxy(实例的ctx, {...}))
    */
   ctx: Data
 
@@ -409,7 +409,7 @@ export interface ComponentInternalInstance {
   /**
    * used for caching the value returned from props default factory functions to
    * avoid unnecessary watcher trigger
-   * @info 用于缓存从 props 默认值，以避免不必要的观察者触发
+   * @info propsOptions 中配置项 默认值是 函数时 会在第一次执行 然后将返回值 存储在 propsDefaults，以避免不必要的观察者触发
    */
   propsDefaults: Data
   /**
@@ -438,11 +438,11 @@ export interface ComponentInternalInstance {
    */
   suspenseId: number
   /**
-   * @info suspense组件 异步依赖
+   * @info 异步 setup的返回值 异步依赖
    */
   asyncDep: Promise<any> | null
   /**
-   * @info suspense组件 异步依赖是否都已处理
+   * @info 异步依赖是否都已处理
    */
   asyncResolved: boolean
 
@@ -570,7 +570,7 @@ export function createComponentInstance(
     directives: null,
 
     // resolved props and emits options
-    // 解析 并且 验证 props emits
+    // 解析 并且 验证 props配置项 emits配置项
     propsOptions: normalizePropsOptions(type, appContext),
     emitsOptions: normalizeEmitsOptions(type, appContext),
 
@@ -620,27 +620,47 @@ export function createComponentInstance(
   if (__DEV__) {
     instance.ctx = createRenderContext(instance)
   } else {
+    // 将实例设置 在 ctx._ 上
     instance.ctx = { _: instance }
   }
+  // 设置根目录
   instance.root = parent ? parent.root : instance
+  // 设置 emit 事件
   instance.emit = emit.bind(null, instance)
   console.log(instance)
   return instance
 }
 
+/**
+ * 当前实例
+ */
 export let currentInstance: ComponentInternalInstance | null = null
 
+/**
+ * @description 获取 当前 实例 || 当前渲染实例
+ */
 export const getCurrentInstance: () => ComponentInternalInstance | null = () =>
   currentInstance || currentRenderingInstance
 
+/**
+ * @description 设置当前 实例
+ * @param instance 组件实例
+ */
 export const setCurrentInstance = (
   instance: ComponentInternalInstance | null
 ) => {
   currentInstance = instance
 }
 
+/**
+ * @description 判断 组件名称是否 是保留字段
+ * @param key 名称
+ */
 const isBuiltInTag = /*#__PURE__*/ makeMap('slot,component')
 
+/**
+ * @description 验证组件名称 是否是保留字段 或者 自定义HTML元素名称
+ */
 export function validateComponentName(name: string, config: AppConfig) {
   const appIsNativeTag = config.isNativeTag || NO
   if (isBuiltInTag(name) || appIsNativeTag(name)) {
@@ -649,13 +669,24 @@ export function validateComponentName(name: string, config: AppConfig) {
     )
   }
 }
-
+/**
+ * @description 判断组件 是否是 stateful 组件 而不是 函数组件
+ */
 export function isStatefulComponent(instance: ComponentInternalInstance) {
   return instance.vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
 }
 
+/**
+ * 是否是 ssr 组件
+ */
 export let isInSSRComponentSetup = false
 
+/**
+ * @description 先初始化 props attrs 的数据 ，再初始化 slots 的数据，然后调用 setupStatefulComponent (这个方法会 初始化 proxy 执行 setup)
+ * @param {ComponentInternalInstance} instance 组件实例
+ * @param {boolean} [isSSR=false] 是否是 ssr
+ * @returns setup 的结果 (ssr 为个 Promise 其它组件都是 undefined)
+ */
 export function setupComponent(
   instance: ComponentInternalInstance,
   isSSR = false
@@ -663,8 +694,14 @@ export function setupComponent(
   isInSSRComponentSetup = isSSR
 
   const { props, children } = instance.vnode
+  /**
+   * 判断组件 是否是 状态组件(正常写法 非函数 组件)
+   */
   const isStateful = isStatefulComponent(instance)
+
+  // 根据 父组件传递的props 和 props配置项 初始化 props 状态
   initProps(instance, props, isStateful, isSSR)
+  //
   initSlots(instance, children)
 
   const setupResult = isStateful
@@ -674,22 +711,35 @@ export function setupComponent(
   return setupResult
 }
 
+/**
+ * @description 生成 代理实例  执行 setup
+ * @param {ComponentInternalInstance} instance 组件实例
+ * @param {boolean} isSSR 是否是 ssr
+ * @returns 返回 ssr 的处理结果
+ */
 function setupStatefulComponent(
   instance: ComponentInternalInstance,
   isSSR: boolean
 ) {
+  /**
+   * 开发人员 提供的 配置项
+   */
   const Component = instance.type as ComponentOptions
 
   if (__DEV__) {
+    // 验证 组件名称
     if (Component.name) {
       validateComponentName(Component.name, instance.appContext.config)
     }
+    // 验证 当前组件挂载的 子组件 的名称
     if (Component.components) {
       const names = Object.keys(Component.components)
       for (let i = 0; i < names.length; i++) {
         validateComponentName(names[i], instance.appContext.config)
       }
     }
+
+    // 验证 指令 的名称
     if (Component.directives) {
       const names = Object.keys(Component.directives)
       for (let i = 0; i < names.length; i++) {
@@ -705,9 +755,13 @@ function setupStatefulComponent(
     }
   }
   // 0. create render proxy property access cache
+  // 创建渲染代理属性访问缓存
   instance.accessCache = Object.create(null)
   // 1. create public instance / render proxy
   // also mark it raw so it's never observed
+  // 创建公共实例/渲染代理
+  // 这里 ctx 还是 { _: instance } 对象
+  // 代理后的 实例 赋值给 instance.proxy
   instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)
   if (__DEV__) {
     exposePropsOnRenderContext(instance)
@@ -715,11 +769,21 @@ function setupStatefulComponent(
   // 2. call setup()
   const { setup } = Component
   if (setup) {
+    /**
+     * 通过 开发人员 通过的 setup 函数 获取到使用的参数长度
+     * 只有一个 参数时 只传入 props
+     * 所以当你使用 setup(...array) 最后的参数会是 [props, null]
+     * 因为剩余参数不计算长度
+     */
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
+    // 设置当前实例 保证 setup 中 `getCurrentInstance` 正确的获取到当前实例
     currentInstance = instance
     pauseTracking()
+    /**
+     * 在错误 捕获里面执行 setup，并且获取 setup 的返回值
+     */
     const setupResult = callWithErrorHandling(
       setup,
       instance,
@@ -728,9 +792,10 @@ function setupStatefulComponent(
     )
     resetTracking()
     currentInstance = null
-
+    // 判断结果 是否是 异步的
     if (isPromise(setupResult)) {
       if (isSSR) {
+        // 如果是 ssr
         // return the promise so server-renderer can wait on it
         return setupResult
           .then((resolvedResult: unknown) => {
@@ -740,8 +805,8 @@ function setupStatefulComponent(
             handleError(e, instance, ErrorCodes.SETUP_FUNCTION)
           })
       } else if (__FEATURE_SUSPENSE__) {
-        // async setup returned Promise.
-        // bail here and wait for re-entry.
+        // async setup returned Promise. bail here and wait for re-entry.
+        // 否则就是 异步组件
         instance.asyncDep = setupResult
       } else if (__DEV__) {
         warn(
@@ -750,9 +815,11 @@ function setupStatefulComponent(
         )
       }
     } else {
+      // setup 返回 非 promise
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
+    // 不存在 setup 时
     finishComponentSetup(instance, isSSR)
   }
 }

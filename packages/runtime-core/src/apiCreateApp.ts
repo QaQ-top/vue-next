@@ -62,11 +62,17 @@ export type OptionMergeFunction = (
 
 export interface AppConfig {
   // @private
+  /**
+   * @description 自定义组件名称 过滤
+   */
   readonly isNativeTag?: (tag: string) => boolean
 
   performance: boolean
   optionMergeStrategies: Record<string, OptionMergeFunction>
   globalProperties: Record<string, any>
+  /**
+   * @description 全局错误捕获
+   */
   errorHandler?: (
     err: unknown,
     instance: ComponentPublicInstance | null,

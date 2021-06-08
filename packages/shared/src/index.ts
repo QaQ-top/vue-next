@@ -133,6 +133,10 @@ export const isIntegerKey = (key: unknown) =>
   key[0] !== '-' &&
   '' + parseInt(key, 10) === key
 
+/**
+ * @description 判断 props 是 key 是否是 保留字段
+ * @param key
+ */
 export const isReservedProp = /*#__PURE__*/ makeMap(
   // the leading comma is intentional so empty string "" is also included
   ',key,ref,' +
@@ -199,6 +203,9 @@ export const invokeArrayFns = (fns: Function[], arg?: any) => {
   }
 }
 
+/**
+ * @description 给对象 设置一个 不可枚举的属性
+ */
 export const def = (obj: object, key: string | symbol, value: any) => {
   Object.defineProperty(obj, key, {
     configurable: true,

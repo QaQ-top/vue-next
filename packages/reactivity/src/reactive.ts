@@ -14,9 +14,24 @@ import {
 import { UnwrapRef, Ref } from './ref'
 
 export const enum ReactiveFlags {
+  /**
+   * 无需响应的对象
+   */
   SKIP = '__v_skip',
+
+  /**
+   * 响应式对象
+   */
   IS_REACTIVE = '__v_isReactive',
+
+  /**
+   * 只读数据
+   */
   IS_READONLY = '__v_isReadonly',
+
+  /**
+   * 取原始对象
+   */
   RAW = '__v_raw'
 }
 
@@ -224,6 +239,10 @@ export function isProxy(value: unknown): boolean {
   return isReactive(value) || isReadonly(value)
 }
 
+/**
+ * @description 返回 reactive 或 readonly 代理的原始对象
+ * @info 可用于临时读取数据而无需承担代理访问/跟踪的开销，也可用于写入数据而避免触发更改
+ */
 export function toRaw<T>(observed: T): T {
   return (
     (observed && toRaw((observed as Target)[ReactiveFlags.RAW])) || observed

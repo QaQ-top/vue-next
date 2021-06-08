@@ -135,6 +135,13 @@ type NormalizedProp =
 export type NormalizedProps = Record<string, NormalizedProp>
 export type NormalizedPropsOptions = [NormalizedProps, string[]] | []
 
+/**
+ * @description 初始化 props (这个是 实例的 props 状态, 不是组件的配置props)
+ * @param {ComponentInternalInstance} instance 组件实例
+ * @param {(Data | null)} rawProps 当前组件 vnode 的 props
+ * @param {number} isStateful 是否是 状态组件
+ * @param {boolean} [isSSR=false] 是否是 ssr
+ */
 export function initProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,
@@ -160,7 +167,7 @@ export function initProps(
   if (__DEV__) {
     validateProps(rawProps || {}, props, instance)
   }
-
+  // 更新 props attrs
   if (isStateful) {
     // stateful
     instance.props = isSSR ? props : shallowReactive(props)
@@ -176,6 +183,9 @@ export function initProps(
   instance.attrs = attrs
 }
 
+/**
+ * @description 更新 props attrs
+ */
 export function updateProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,
@@ -306,6 +316,14 @@ export function updateProps(
   }
 }
 
+/**
+ * @description 区分 父组件绑定的属性是  props状态 还是 attrs 状态
+ * @param {ComponentInternalInstance} instance 组件实例
+ * @param {(Data | null)} rawProps 当前组件 vnode 的 props当前组件 vnode 的 props (绑定的全部属性)
+ * @param {Data} props props
+ * @param {Data} attrs attrs
+ * @returns
+ */
 function setFullProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,
@@ -317,11 +335,13 @@ function setFullProps(
   let rawCastValues: Data | undefined
   if (rawProps) {
     for (let key in rawProps) {
-      // key, ref are reserved and never passed down
+      // key, ref are reserved and never passed down\
+      // 保留字段直接 跳过区分 处理
       if (isReservedProp(key)) {
         continue
       }
 
+      // 兼容性处理
       if (__COMPAT__) {
         if (key.startsWith('onHook:')) {
           softAssertCompatEnabled(
@@ -334,21 +354,30 @@ function setFullProps(
           continue
         }
       }
-
+      /**
+       * 组件上属性 绑定的值
+       */
       const value = rawProps[key]
       // prop option names are camelized during normalization, so to support
       // kebab -> camel conversion here we need to camelize the key.
+      /**
+       * camelize(key) 目的是 - 转 驼峰名命 主要是 在我们标准化 props 配置时 提前转驼峰处理了 (normalizePropsOptions)
+       * 再判断 propsOptions 配置项是否操作 并且 key 在 propsOptions配置项内
+       */
       let camelKey
       if (options && hasOwn(options, (camelKey = camelize(key)))) {
         if (!needCastKeys || !needCastKeys.includes(camelKey)) {
+          // 没有 needCastKeys 并且 key 不在 needCastKeys内 直接赋值给 props
           props[camelKey] = value
         } else {
+          // 如果 key 有默认值 或者 是Boolean类型 先放入到另外一个对象中存储
           ;(rawCastValues || (rawCastValues = {}))[camelKey] = value
         }
       } else if (!isEmitListener(instance.emitsOptions, key)) {
         // Any non-declared (either as a prop or an emitted event) props are put
         // into a separate `attrs` object for spreading. Make sure to preserve
         // original key casing
+        // 如果不是 事件 都加到 attrs
         if (__COMPAT__) {
           if (isOn(key) && key.endsWith('Native')) {
             key = key.slice(0, -6) // remove Native postfix
@@ -364,18 +393,24 @@ function setFullProps(
     }
   }
 
+  // 再配置 拥有 默认值的 props
   if (needCastKeys) {
     const rawCurrentProps = toRaw(props)
     const castValues = rawCastValues || EMPTY_OBJ
+    console.log(JSON.stringify(castValues))
+
+    // 这里循环 的 全部需要处理 默认值、Boolean 的 key
     for (let i = 0; i < needCastKeys.length; i++) {
       const key = needCastKeys[i]
+      // 处理 显示 默认值 还是 父组件给的值
+      // 处理 Boolean 正确显示
       props[key] = resolvePropValue(
         options!,
         rawCurrentProps,
         key,
         castValues[key],
         instance,
-        !hasOwn(castValues, key)
+        !hasOwn(castValues, key) // castValues 循环父组件 父组件传递了 拥有默认值 或者 Boolean 的值
       )
     }
   }
@@ -383,6 +418,16 @@ function setFullProps(
   return hasAttrsChanged
 }
 
+/**
+ * @description 返回 配置项 中的 默认值
+ * @param {NormalizedProps} options 组件 props 的配置项
+ * @param {Data} props 当前 组件的 props
+ * @param {string} key 拥有默认值的 key 或者 类型是 Boolean 的 key
+ * @param {unknown} value 对应key 的值 (其实是 父组件给 当前组件 该属性的 值)
+ * @param {ComponentInternalInstance} instance 当前props的 组件实例
+ * @param {boolean} isAbsent 是否缺少这个 key (意思是 父组件 没有传递该属性)
+ * @returns
+ */
 function resolvePropValue(
   options: NormalizedProps,
   props: Data,
@@ -391,17 +436,28 @@ function resolvePropValue(
   instance: ComponentInternalInstance,
   isAbsent: boolean
 ) {
+  /**
+   * 当前 key 在props配置项 中的 配置
+   */
   const opt = options[key]
   if (opt != null) {
+    /**
+     * key 是否 有默认值
+     */
     const hasDefault = hasOwn(opt, 'default')
     // default values
+    // 如果存在默认属性 并且 父组件没有传递 该值
     if (hasDefault && value === undefined) {
       const defaultValue = opt.default
+      // 如果 props配置里 这个key的 值不是还是 当是值 确是函数
       if (opt.type !== Function && isFunction(defaultValue)) {
         const { propsDefaults } = instance
+        // 判断当前 key 的 值是否存在 propsDefaults 中
         if (key in propsDefaults) {
           value = propsDefaults[key]
         } else {
+          // 如果不存在 就 执行一次 默认函数 得到 值 并且 存储在 propsDefaults 中
+          // 这里设置 当前实例 是因为开发人员函数 可能使用 `getCurrentInstance` 保证获取实例正确
           setCurrentInstance(instance)
           value = propsDefaults[key] = defaultValue.call(
             __COMPAT__ &&
@@ -413,13 +469,18 @@ function resolvePropValue(
           setCurrentInstance(null)
         }
       } else {
+        // 否则 value 直接就 的默认值
         value = defaultValue
       }
     }
     // boolean casting
+    // 处理 Boolean 类型 的 key
     if (opt[BooleanFlags.shouldCast]) {
+      // 没有默认值 并且 父组件也没定义
       if (isAbsent && !hasDefault) {
         value = false
+
+        // 如果 不存在 或者 Boolean应用在String 就将 空字符串 和 key同名的值 可以直接 转成 true
       } else if (
         opt[BooleanFlags.shouldCastTrue] &&
         (value === '' || value === hyphenate(key))
@@ -467,7 +528,7 @@ export function normalizePropsOptions(
    */
   const normalized: NormalizedPropsOptions[0] = {}
   /**
-   * props 中的 key
+   * props 中的 key (类型是 Boolean 或者 有默认值的 key都会放入到这个数组)
    */
   const needCastKeys: NormalizedPropsOptions[1] = []
 
@@ -487,7 +548,7 @@ export function normalizePropsOptions(
       const [props, keys] = normalizePropsOptions(raw, appContext, true)
       // 合并 props
       extend(normalized, props)
-      // keys 肯能 undefined
+      // keys 可能 undefined
       if (keys) needCastKeys.push(...keys)
     }
     // 主要是 过滤多次处理 全局 mixins (因为默认第一次处理，后续递归函数 不需要处理了)
@@ -526,7 +587,7 @@ export function normalizePropsOptions(
       }
     }
   } else if (raw) {
-    // 不上 数组 就只能是对象了
+    // 不是 数组 就只能是对象了
     if (__DEV__ && !isObject(raw)) {
       warn(`invalid props options`, raw)
     }
@@ -550,7 +611,7 @@ export function normalizePropsOptions(
           const booleanIndex = getTypeIndex(Boolean, prop.type)
           const stringIndex = getTypeIndex(String, prop.type)
           // prop[0] = 是否存在 Boolean 类型
-          // prop[1] = 不存在 String 或者 只存在 Boolean
+          // prop[1] = 不存在 String 或者 String Boolean 都操作 但是 String 出现的索引要 大于 Boolean
           prop[BooleanFlags.shouldCast] = booleanIndex > -1
           prop[BooleanFlags.shouldCastTrue] =
             stringIndex < 0 || booleanIndex < stringIndex

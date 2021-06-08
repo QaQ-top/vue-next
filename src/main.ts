@@ -13,8 +13,8 @@ nextTick(() => {
 
 import './themes/index.scss'
 // import '@src/utils/storage';
-// import App from '@src/pages/index.vue'
-import App from '@src/pages/home/index.vue'
+import App from '@src/pages/index.vue'
+// import App from '@src/pages/home/index.vue'
 const root = createApp({
   render: () => {
     return h(App, () => 'App 传递')

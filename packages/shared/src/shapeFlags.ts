@@ -7,11 +7,11 @@ export const enum ShapeFlags {
    */
   ELEMENT = 1,
   /**
-   * 功能性组件
+   * 函数式组件 (https://v3.cn.vuejs.org/guide/migration/functional-components.html)
    */
   FUNCTIONAL_COMPONENT = 1 << 1, // 010
   /**
-   * Component 组件
+   * 状态组件 (正常写法的组件)
    */
   STATEFUL_COMPONENT = 1 << 2, // 0100
   /**
