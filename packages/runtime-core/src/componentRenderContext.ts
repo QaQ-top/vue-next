@@ -24,6 +24,7 @@ export let currentScopeId: string | null = null
  * // ...render
  * setCurrentRenderingInstance(prev)
  * ```
+ * @description 设置当前渲染实例 当前空间名命 然后把上一次渲染实例返回
  */
 export function setCurrentRenderingInstance(
   instance: ComponentInternalInstance | null

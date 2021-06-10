@@ -49,6 +49,7 @@ export type EmitFn<
       >
 
 /**
+ * > emit 方法
  * @description 触发 组件自定义 事件 (cxt.emit, this.$emit)
  * @param {ComponentInternalInstance} instance 当前实例 (在创建实例时会使用 bind() 绑定该实例)
  * @param {string} event 事件名称
@@ -219,6 +220,7 @@ export function emit(
 }
 
 /**
+ * > 合并 emits 和 mixins extends 中的 emits 配置
  * @description 标准化 emitsOptions
  * @param {ConcreteComponent} comp 组件的 配置项
  * @param {AppContext} appContext 全局上下文(全局配置)
@@ -274,7 +276,7 @@ export function normalizeEmitsOptions(
       comp.mixins.forEach(extendEmits)
     }
   }
-  // emits 为空 并且 不是递归获取 mixins extends 的 emits
+  // emits 为空 并且 也没有进行 mixins extends 合并
   if (!raw && !hasExtends) {
     cache.set(comp, null)
     return null

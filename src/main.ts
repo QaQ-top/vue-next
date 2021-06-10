@@ -1,4 +1,11 @@
-import { createApp, h, onErrorCaptured, nextTick } from 'vue'
+import {
+  createApp,
+  h,
+  onErrorCaptured,
+  nextTick,
+  compile,
+  registerRuntimeCompiler
+} from 'vue'
 
 /**
  * NOT GO 不太理解 这个 nextTick 应该是第一个 then 的 挂载
@@ -13,8 +20,8 @@ nextTick(() => {
 
 import './themes/index.scss'
 // import '@src/utils/storage';
-import App from '@src/pages/index.vue'
-// import App from '@src/pages/home/index.vue'
+// import App from '@src/pages/index.vue'
+import App from '@src/pages/home/index.vue'
 const root = createApp({
   render: () => {
     return h(App, () => 'App 传递')

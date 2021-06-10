@@ -136,7 +136,7 @@ export type NormalizedProps = Record<string, NormalizedProp>
 export type NormalizedPropsOptions = [NormalizedProps, string[]] | []
 
 /**
- * @description 初始化 props (这个是 实例的 props 状态, 不是组件的配置props)
+ * @description 初始化 props(shallowReactive 代理) 和 attrs (这个是 实例的 props 状态, 不是组件的配置props)
  * @param {ComponentInternalInstance} instance 组件实例
  * @param {(Data | null)} rawProps 当前组件 vnode 的 props
  * @param {number} isStateful 是否是 状态组件
@@ -157,6 +157,8 @@ export function initProps(
   setFullProps(instance, rawProps, props, attrs)
 
   // ensure all declared prop keys are present
+  // 解决 https://github.com/vuejs/vue-next/issues/3288
+  // 这里是将父组件没有定义 并且 没有默认值的 prop 设置为 undefined
   for (const key in instance.propsOptions[0]) {
     if (!(key in props)) {
       props[key] = undefined
@@ -170,8 +172,10 @@ export function initProps(
   // 更新 props attrs
   if (isStateful) {
     // stateful
+    // 如果不是ssr 就给 props 浅响应式代理
     instance.props = isSSR ? props : shallowReactive(props)
   } else {
+    // 函数组件
     if (!instance.type.props) {
       // functional w/ optional props, props === attrs
       instance.props = attrs
@@ -180,6 +184,7 @@ export function initProps(
       instance.props = props
     }
   }
+  // attrs 直接处理就好了
   instance.attrs = attrs
 }
 
@@ -320,9 +325,9 @@ export function updateProps(
  * @description 区分 父组件绑定的属性是  props状态 还是 attrs 状态
  * @param {ComponentInternalInstance} instance 组件实例
  * @param {(Data | null)} rawProps 当前组件 vnode 的 props当前组件 vnode 的 props (绑定的全部属性)
- * @param {Data} props props
- * @param {Data} attrs attrs
- * @returns
+ * @param {Data} props 实例的 props
+ * @param {Data} attrs 实例的 attrs
+ * @returns 返回 attrs 是否更新了
  */
 function setFullProps(
   instance: ComponentInternalInstance,
@@ -330,7 +335,11 @@ function setFullProps(
   props: Data,
   attrs: Data
 ) {
+  // 获取配置项 和 需要进行 默认值 Boolean值 处理的 keys
   const [options, needCastKeys] = instance.propsOptions
+  /**
+   * 表示 attrs 是否有改变
+   */
   let hasAttrsChanged = false
   let rawCastValues: Data | undefined
   if (rawProps) {
@@ -385,6 +394,7 @@ function setFullProps(
             continue
           }
         }
+        // 当前的 值 不等于 旧值时 才重新赋值
         if (value !== attrs[key]) {
           attrs[key] = value
           hasAttrsChanged = true
@@ -397,7 +407,6 @@ function setFullProps(
   if (needCastKeys) {
     const rawCurrentProps = toRaw(props)
     const castValues = rawCastValues || EMPTY_OBJ
-    console.log(JSON.stringify(castValues))
 
     // 这里循环 的 全部需要处理 默认值、Boolean 的 key
     for (let i = 0; i < needCastKeys.length; i++) {
@@ -426,7 +435,7 @@ function setFullProps(
  * @param {unknown} value 对应key 的值 (其实是 父组件给 当前组件 该属性的 值)
  * @param {ComponentInternalInstance} instance 当前props的 组件实例
  * @param {boolean} isAbsent 是否缺少这个 key (意思是 父组件 没有传递该属性)
- * @returns
+ * @returns 返回 父组件传递的值 或者 默认值
  */
 function resolvePropValue(
   options: NormalizedProps,

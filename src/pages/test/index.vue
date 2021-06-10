@@ -9,7 +9,7 @@
 </template>
 
 <script lang="ts" >
-import { defineComponent, h, provide, useCssModule } from 'vue';
+import { defineComponent, h, provide } from 'vue';
 
 export default defineComponent({
   name: "Test",
@@ -73,9 +73,7 @@ export default defineComponent({
   deactivated() {
     console.log(this)
   },
-  setup(...arr) {
-    console.log(arr)
-    const [props, ctx] = arr;
+  setup(props, ctx) {
     ctx.emit('foo', 1,2,3,4,5)
     ctx.emit('update:modelValue', 100)
     provide('test_provide', {

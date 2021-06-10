@@ -520,7 +520,8 @@ const emptyAppContext = createAppContext()
 let uid = 0
 
 /**
- * @description 创建组件实例
+ * > 创建组件实例
+ * @description 通过 vnode 创建组件实例
  * @param {VNode} vnode 当前组件的 vnode
  * @param {(ComponentInternalInstance | null)} parent 当前组件的 父组件实例
  * @param {(SuspenseBoundary | null)} suspense 似乎都是 null
@@ -683,10 +684,11 @@ export function isStatefulComponent(instance: ComponentInternalInstance) {
 export let isInSSRComponentSetup = false
 
 /**
- * @description 先初始化 props attrs 的数据 ，再初始化 slots 的数据，然后调用 setupStatefulComponent (这个方法会 初始化 proxy 执行 setup)
+ * > 初始化实例数据
+ * @description 先初始化 props attrs 的数据 ，再初始化 slots 的数据，然后调用 setupStatefulComponent (这个方法会 初始化 proxy 执行 setup, 这个函数内会调用 配置render的方法)
  * @param {ComponentInternalInstance} instance 组件实例
  * @param {boolean} [isSSR=false] 是否是 ssr
- * @returns setup 的结果 (ssr 为个 Promise 其它组件都是 undefined)
+ * @returns 返回 异步 ssr 的处理结果 (非异步ssr的 setup 都不会返回)
  */
 export function setupComponent(
   instance: ComponentInternalInstance,
@@ -713,10 +715,11 @@ export function setupComponent(
 }
 
 /**
- * @description 生成 代理实例  执行 setup
+ * > 执行setup
+ * @description 生成 代理实例 执行 setup 配置 render
  * @param {ComponentInternalInstance} instance 组件实例
  * @param {boolean} isSSR 是否是 ssr
- * @returns 返回 ssr 的处理结果
+ * @returns 返回 异步 ssr 的处理结果 (非异步ssr的 setup 都不会返回)
  */
 function setupStatefulComponent(
   instance: ComponentInternalInstance,
@@ -781,6 +784,7 @@ function setupStatefulComponent(
 
     // 设置当前实例 保证 setup 中 `getCurrentInstance` 正确的获取到当前实例
     currentInstance = instance
+    // 关闭依赖收集
     pauseTracking()
     /**
      * 在错误 捕获里面执行 setup，并且获取 setup 的返回值
@@ -791,9 +795,10 @@ function setupStatefulComponent(
       ErrorCodes.SETUP_FUNCTION,
       [__DEV__ ? shallowReadonly(instance.props) : instance.props, setupContext]
     )
+    // 恢复依赖收集
     resetTracking()
     currentInstance = null
-    // 判断结果 是否是 异步的
+    // 判断结果 是否是 异步的 setup
     if (isPromise(setupResult)) {
       if (isSSR) {
         // 如果是 ssr
@@ -808,6 +813,7 @@ function setupStatefulComponent(
       } else if (__FEATURE_SUSPENSE__) {
         // async setup returned Promise. bail here and wait for re-entry.
         // 否则就是 异步组件
+        // 设置异步依赖
         instance.asyncDep = setupResult
       } else if (__DEV__) {
         warn(
@@ -820,23 +826,40 @@ function setupStatefulComponent(
       handleSetupResult(instance, setupResult, isSSR)
     }
   } else {
-    // 不存在 setup 时
+    // 不存在 setup 时 直接 配置 render
     finishComponentSetup(instance, isSSR)
   }
 }
 
+/**
+ * > 挂载渲染函数
+ * @description 对返回值进行处理 返回值 `函数`就挂载到实例的 render `对象`就进行解包代理后 挂载到setupState
+ * @param {ComponentInternalInstance} instance 当前组件实例
+ * @param {unknown} setupResult 当前组件实例 setup 的返回值
+ * @param {boolean} isSSR 是否是 ssr
+ */
 export function handleSetupResult(
   instance: ComponentInternalInstance,
   setupResult: unknown,
   isSSR: boolean
 ) {
+  // 如果返回值是 函数 代表是 返回值是渲染函数
   if (isFunction(setupResult)) {
+    /**
+     * 正常sfc组件的 模板 在模板编译阶段会被处理 并且 在compiler阶段 会自动生成 render 这个配置项 (instance.type.render)
+     *
+     * 这里 是配置的 组件实例上的 render 在后续`finishComponentSetup`设置 render 时会优先使用现在的
+     * 所以 setup 返回的 渲染函数 优先级比 配置项的 render 大
+     *
+     */
     // setup returned an inline render function
     if (__NODE_JS__ && (instance.type as ComponentOptions).__ssrInlineRender) {
       // when the function's name is `ssrRender` (compiled by SFC inline mode),
       // set it as ssrRender instead.
+      // ssr 渲染函数处理
       instance.ssrRender = setupResult
     } else {
+      // 渲染函数
       instance.render = setupResult as InternalRenderFunction
     }
   } else if (isObject(setupResult)) {
@@ -851,6 +874,7 @@ export function handleSetupResult(
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       instance.devtoolsRawSetupState = setupResult
     }
+    // 如果是对象 设置 setupState 并且进行解包代理
     instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
@@ -862,6 +886,8 @@ export function handleSetupResult(
       }`
     )
   }
+
+  // 配置 render
   finishComponentSetup(instance, isSSR)
 }
 
@@ -876,18 +902,31 @@ let compile: CompileFunction | undefined
 export const isRuntimeOnly = () => !compile
 
 /**
+ * @description 配置 运行时 的编译器
  * For runtime-dom to register the compiler.
  * Note the exported method uses any to avoid d.ts relying on the compiler types.
+ * 配置 Runtime 时可以使用 compile (compiler-dom通过)
+ * 正常 使用vite 或者 vue-cli 不会有 主动添加 compile 因为插件在解析 .vue 时会将 <template></template> 编译成渲染函数
+ * compile 主要是运行在浏览器 的模板编译器 将 组件的 template 配置项解析 成渲染函数
  */
 export function registerRuntimeCompiler(_compile: any) {
   compile = _compile
 }
 
+/**
+ * @description 配置 render 函数 (compile时 会对 字符串模板进行编译生成render)
+ * @param {ComponentInternalInstance} instance 组件实例
+ * @param {boolean} isSSR 是否是 ssr
+ * @param {boolean} [skipOptions] 配置项
+ */
 export function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean,
   skipOptions?: boolean
 ) {
+  /**
+   * 组件配置项
+   */
   const Component = instance.type as ComponentOptions
 
   if (__COMPAT__) {
@@ -905,11 +944,15 @@ export function finishComponentSetup(
     // 3. if the component doesn't have a render function,
     //    set `instance.render` to NOOP so that it can inherit the render
     //    function from mixins/extend
+    // 配置 render 函数
     instance.render = (instance.render ||
       Component.render ||
       NOOP) as InternalRenderFunction
+
+    // 如果没有 组件实例上没有 render
   } else if (!instance.render) {
     // could be set from setup()
+    // 如果 compile (模板编译器) 存在 并且开发人员没有配置 render 项
     if (compile && !Component.render) {
       const template =
         (__COMPAT__ &&
@@ -942,6 +985,7 @@ export function finishComponentSetup(
             extend(finalCompilerOptions.compatConfig, Component.compatConfig)
           }
         }
+        // 通过 compile 将 template 保存render函数
         Component.render = compile(template, finalCompilerOptions)
         if (__DEV__) {
           endMeasure(instance, `compile`)
@@ -949,11 +993,13 @@ export function finishComponentSetup(
       }
     }
 
+    // 配置 render 函数 (如果 在处理setup 返回值时 配置过render 这里就不会在配置了)
     instance.render = (Component.render || NOOP) as InternalRenderFunction
 
     // for runtime-compiled render functions using `with` blocks, the render
     // proxy used needs a different `has` handler which is more performant and
     // also only allows a whitelist of globals to fallthrough.
+    // 使用 `with` 渲染时 需要挂载 withProxy (runtime-compiler 才会有这个配置项)
     if (instance.render._rc) {
       instance.withProxy = new Proxy(
         instance.ctx,
