@@ -234,6 +234,9 @@ export interface VNode<
    * 当前组件的 实例
    */
   component: ComponentInternalInstance | null
+  /**
+   * 指令绑定
+   */
   dirs: DirectiveBinding[] | null
   transition: TransitionHooks<HostElement> | null
 
@@ -541,6 +544,9 @@ const normalizeKey = ({ key }: VNodeProps): VNode['key'] =>
 /**
  * 复制 ref
  * @description 传入一个 vnode 复制传入vnode的 ref 并且 要保证 ref 的 i 是当前渲染的组件实例
+ * ``` js
+ *  { i: instance, r: 'foo' }
+ * ```
  */
 const normalizeRef = ({ ref }: VNodeProps): VNodeNormalizedRefAtom | null => {
   return (ref != null
@@ -663,6 +669,7 @@ function _createVNode(
     )
   }
 
+  // 创建 vnode
   const vnode: VNode = {
     __v_isVNode: true,
     __v_skip: true,
@@ -685,8 +692,8 @@ function _createVNode(
     targetAnchor: null,
     staticCount: 0,
     shapeFlag,
-    patchFlag,
-    dynamicProps,
+    patchFlag, // compiler 阶段产生的
+    dynamicProps, // openBlock createBlock 阶段产生
     dynamicChildren: null,
     appContext: null
   }
@@ -703,6 +710,7 @@ function _createVNode(
     ;(type as typeof SuspenseImpl).normalize(vnode)
   }
 
+  // 下面这个 没太明白
   if (
     isBlockTreeEnabled > 0 &&
     // avoid a block node from tracking itself

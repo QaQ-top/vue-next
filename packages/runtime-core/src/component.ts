@@ -629,7 +629,6 @@ export function createComponentInstance(
   instance.root = parent ? parent.root : instance
   // 设置 emit 事件
   instance.emit = emit.bind(null, instance)
-  console.log(instance)
   return instance
 }
 

@@ -2233,7 +2233,7 @@ function baseCreateRenderer(
   }
 
   /**
-   * @description 卸载 vnode
+   * @description 卸载 vnode 触发卸载的钩子(vonde dirs )
    * @param vnode 要卸载 的 虚拟节点
    * @param parentComponent 当前 vnode 所在组件 的实例
    * @param parentSuspense  默认 null
@@ -2257,6 +2257,7 @@ function baseCreateRenderer(
       patchFlag,
       dirs
     } = vnode
+    console.log(vnode)
     // unset ref
     if (ref != null) {
       // vnode 有绑定 ref 就 解除绑定
@@ -2283,18 +2284,21 @@ function baseCreateRenderer(
      * 判断组件类型 执行相关操作
      */
     if (shapeFlag & ShapeFlags.COMPONENT) {
-      console.log(vnode)
+      // 如果是组件 卸载组件
       unmountComponent(vnode.component!, parentSuspense, doRemove)
     } else {
       if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
+        // 如果是异步组件 卸载异步 组件
         vnode.suspense!.unmount(parentSuspense, doRemove)
         return
       }
 
+      // 存在指令 执行 指令 beforeUnmount 钩子
       if (shouldInvokeDirs) {
         invokeDirectiveHook(vnode, null, parentComponent, 'beforeUnmount')
       }
 
+      // 处理 telepopt 组件
       if (shapeFlag & ShapeFlags.TELEPORT) {
         ;(vnode.type as typeof TeleportImpl).remove(
           vnode,
@@ -2332,6 +2336,7 @@ function baseCreateRenderer(
       }
     }
 
+    // 在后置任务队列执行 vnode onVnodeUnmounted 钩子 和 dirs unmounted 钩子
     if ((vnodeHook = props && props.onVnodeUnmounted) || shouldInvokeDirs) {
       queuePostRenderEffect(() => {
         vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode)
