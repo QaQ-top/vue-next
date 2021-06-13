@@ -1,4 +1,11 @@
-import { createApp, h, onErrorCaptured, nextTick } from 'vue'
+import {
+  createApp,
+  h,
+  onErrorCaptured,
+  nextTick,
+  compile,
+  registerRuntimeCompiler
+} from 'vue'
 
 /**
  * NOT GO 不太理解 这个 nextTick 应该是第一个 then 的 挂载
@@ -17,7 +24,7 @@ import './themes/index.scss'
 import App from '@src/pages/home/index.vue'
 const root = createApp({
   render: () => {
-    return h(App, 'App 传递')
+    return h(App, () => 'App 传递')
   },
   setup: () => {
     /**
@@ -47,8 +54,17 @@ root.config.globalProperties = {
 
 console.log(__VITE__GLOBAL__)
 
+root.component('GlobalComponent', {
+  name: 'GlobalComponent',
+  render: () => {
+    return 'GlobalComponent'
+  }
+})
+
 root.directive('foo', {
   mounted: el => {}
 })
+
+root.config
 
 root.mount('#root')

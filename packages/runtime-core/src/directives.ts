@@ -19,6 +19,7 @@ import { currentRenderingInstance } from './componentRenderContext'
 import { callWithAsyncErrorHandling, ErrorCodes } from './errorHandling'
 import { ComponentPublicInstance } from './componentPublicInstance'
 import { mapCompatDirectiveHook } from './compat/customDirective'
+import { pauseTracking, resetTracking } from '@vue/reactivity'
 
 export interface DirectiveBinding<V = any> {
   instance: ComponentPublicInstance | null
@@ -64,6 +65,10 @@ const isBuiltInDirective = /*#__PURE__*/ makeMap(
   'bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text'
 )
 
+/**
+ * @description 验证 自定义 指令名称 是否 是保留名称
+ * @param {string} name 指令名称
+ */
 export function validateDirectiveName(name: string) {
   if (isBuiltInDirective(name)) {
     warn('Do not use built-in directive ids as custom directive id: ' + name)
@@ -130,12 +135,16 @@ export function invokeDirectiveHook(
       hook = mapCompatDirectiveHook(name, binding.dir, instance)
     }
     if (hook) {
+      // disable tracking inside all lifecycle hooks
+      // since they can potentially be called inside effects.
+      pauseTracking()
       callWithAsyncErrorHandling(hook, instance, ErrorCodes.DIRECTIVE_HOOK, [
         vnode.el,
         binding,
         vnode,
         prevVNode
       ])
+      resetTracking()
     }
   }
 }

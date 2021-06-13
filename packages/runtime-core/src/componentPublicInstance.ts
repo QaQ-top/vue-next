@@ -33,7 +33,8 @@ import {
   OptionTypesType,
   OptionTypesKeys,
   resolveMergedOptions,
-  shouldCacheAccess
+  shouldCacheAccess,
+  MergedComponentOptionsOverride
 } from './componentOptions'
 import { EmitsOptions, EmitFn } from './componentEmits'
 import { Slots } from './componentSlots'
@@ -188,7 +189,7 @@ export type ComponentPublicInstance<
   $parent: ComponentPublicInstance | null
   $emit: EmitFn<E>
   $el: any
-  $options: Options
+  $options: Options & MergedComponentOptionsOverride
   $forceUpdate: ReactiveEffect
   $nextTick: typeof nextTick
   $watch(
@@ -220,21 +221,65 @@ const getPublicInstance = (
   if (isStatefulComponent(i)) return i.exposed ? i.exposed : i.proxy
   return getPublicInstance(i.parent)
 }
-
+/**
+ * 公共属性 映射
+ */
 const publicPropertiesMap: PublicPropertiesMap = extend(Object.create(null), {
+  /**
+   * 获取当前组件实例
+   */
   $: i => i,
+  /**
+   * 获取当前组件 根dom
+   */
   $el: i => i.vnode.el,
+  /**
+   * 获取代理后的 data
+   */
   $data: i => i.data,
+  /**
+   * 获取代理后的 props
+   */
   $props: i => (__DEV__ ? shallowReadonly(i.props) : i.props),
+  /**
+   * 获取 attrs
+   */
   $attrs: i => (__DEV__ ? shallowReadonly(i.attrs) : i.attrs),
+  /**
+   * 获取 slots
+   */
   $slots: i => (__DEV__ ? shallowReadonly(i.slots) : i.slots),
+  /**
+   * 获取 refs (当前组件内所有 ref)
+   */
   $refs: i => (__DEV__ ? shallowReadonly(i.refs) : i.refs),
+  /**
+   * 获取 当前实例的 父实例
+   */
   $parent: i => getPublicInstance(i.parent),
+  /**
+   * 获取 vue 根实例
+   */
   $root: i => getPublicInstance(i.root),
+  /**
+   * 获取 当前实例 的 emit方法
+   */
   $emit: i => i.emit,
+  /**
+   * 获取 当前实例的配置项
+   */
   $options: i => (__FEATURE_OPTIONS_API__ ? resolveMergedOptions(i) : i.type),
+  /**
+   * 强制当前实例渲染，这个更新函数会加入到 调度事件中 的 主任务
+   */
   $forceUpdate: i => () => queueJob(i.update),
+  /**
+   * 返回 nextTick 并且把 代理实例 传入
+   */
   $nextTick: i => nextTick.bind(i.proxy!),
+  /**
+   * 返回 instanceWatch 并且绑定当前实例为 this
+   */
   $watch: i => (__FEATURE_OPTIONS_API__ ? instanceWatch.bind(i) : NOOP)
 } as PublicPropertiesMap)
 
@@ -243,10 +288,25 @@ if (__COMPAT__) {
 }
 
 const enum AccessTypes {
+  /**
+   * 表示 setup 返回的数据
+   */
   SETUP,
+  /**
+   * 表示 data 返回的数据
+   */
   DATA,
+  /**
+   * 表示 props 的数据
+   */
   PROPS,
+  /**
+   * 表示 ctx
+   */
   CONTEXT,
+  /**
+   * 代表其它
+   */
   OTHER
 }
 
@@ -255,6 +315,9 @@ export interface ComponentRenderContext {
   _: ComponentInternalInstance
 }
 
+/**
+ * @description 实例代理处理
+ */
 export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
   get({ _: instance }: ComponentRenderContext, key: string) {
     const {
@@ -268,6 +331,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     } = instance
 
     // let @vue/reactivity know it should never observe Vue public instances.
+    // 告诉 reactivity 它不应该观察Vue的公共实例
     if (key === ReactiveFlags.SKIP) {
       return true
     }
@@ -284,24 +348,40 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     // access on a plain object, so we use an accessCache object (with null
     // prototype) to memoize what access type a key corresponds to.
     let normalizedProps
+    // 如果访问 的 不是$开头的属性
     if (key[0] !== '$') {
+      /**
+       * 目标数据存储位置
+       */
       const n = accessCache![key]
+      // 如果 有缓存 访问位置
       if (n !== undefined) {
         switch (n) {
+          // 0 代表setupState (setup 返回)
           case AccessTypes.SETUP:
             return setupState[key]
+
+          // 1 代表 data 中的数据
           case AccessTypes.DATA:
             return data[key]
+
+          // 3 代表 ctx 中的数据
           case AccessTypes.CONTEXT:
             return ctx[key]
+
+          // 2 代表 props 中的数据
           case AccessTypes.PROPS:
             return props![key]
           // default: just fallthrough
         }
       } else if (setupState !== EMPTY_OBJ && hasOwn(setupState, key)) {
+        // 如果 setupState 不是 空对象 并且 setupState 中 存在这个 key
+        // 保存 访问路径然后 返回数据
         accessCache![key] = AccessTypes.SETUP
         return setupState[key]
       } else if (data !== EMPTY_OBJ && hasOwn(data, key)) {
+        // 如果 data 不是 空对象 并且 data 中 存在这个 key
+        // 保存 访问路径然后 返回数据
         accessCache![key] = AccessTypes.DATA
         return data[key]
       } else if (
@@ -310,6 +390,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
         (normalizedProps = instance.propsOptions[0]) &&
         hasOwn(normalizedProps, key)
       ) {
+        // 这里不同的是 必须保证 组件实例上 props配置项 里面有配置这个 key 才让你 访问组件的 props
         accessCache![key] = AccessTypes.PROPS
         return props![key]
       } else if (ctx !== EMPTY_OBJ && hasOwn(ctx, key)) {
@@ -320,6 +401,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       }
     }
 
+    // 代理 $开头的 属性和 方法
     const publicGetter = publicPropertiesMap[key]
     let cssModule, globalProperties
     // public $xxx properties
@@ -331,12 +413,14 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       return publicGetter(instance)
     } else if (
       // css module (injected by vue-loader)
+      // 判断 是否 是 cssModule ($style 访问时)
       (cssModule = type.__cssModules) &&
       (cssModule = cssModule[key])
     ) {
       return cssModule
     } else if (ctx !== EMPTY_OBJ && hasOwn(ctx, key)) {
       // user may set custom properties to `this` that start with `$`
+      // 访问 自定义 $ 开头的 属性
       accessCache![key] = AccessTypes.CONTEXT
       return ctx[key]
     } else if (
@@ -344,6 +428,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       ((globalProperties = appContext.config.globalProperties),
       hasOwn(globalProperties, key))
     ) {
+      // 在去访问 全局 属性
       if (__COMPAT__) {
         const desc = Object.getOwnPropertyDescriptor(globalProperties, key)!
         if (desc.get) {
@@ -363,6 +448,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
         // to infinite warning loop
         key.indexOf('__v') !== 0)
     ) {
+      // 开发获取下 提示 没有该属性的错误
       if (
         data !== EMPTY_OBJ &&
         (key[0] === '$' || key[0] === '_') &&
@@ -388,6 +474,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     key: string,
     value: any
   ): boolean {
+    // set 代理后 方法 只能 设置  data, setupState, ctx
     const { data, setupState, ctx } = instance
     if (setupState !== EMPTY_OBJ && hasOwn(setupState, key)) {
       setupState[key] = value

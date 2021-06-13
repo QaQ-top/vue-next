@@ -30,6 +30,9 @@ export const EMPTY_OBJ: { readonly [key: string]: any } = __DEV__
   : {}
 export const EMPTY_ARR = __DEV__ ? Object.freeze([]) : []
 
+/**
+ * 空函数
+ */
 export const NOOP = () => {}
 
 /**
@@ -133,6 +136,10 @@ export const isIntegerKey = (key: unknown) =>
   key[0] !== '-' &&
   '' + parseInt(key, 10) === key
 
+/**
+ * @description 判断 props 是 key 是否是 保留字段
+ * @param key
+ */
 export const isReservedProp = /*#__PURE__*/ makeMap(
   // the leading comma is intentional so empty string "" is also included
   ',key,ref,' +
@@ -182,7 +189,8 @@ export const capitalize = cacheStringFunction(
 )
 
 /**
- * @description
+ * @description 将字符串 第一个字符转为 大写 并且 在前面加上 on
+ * @info 方便 读取 props 上绑定的 方法
  */
 export const toHandlerKey = cacheStringFunction(
   (str: string) => (str ? `on${capitalize(str)}` : ``)
@@ -198,6 +206,9 @@ export const invokeArrayFns = (fns: Function[], arg?: any) => {
   }
 }
 
+/**
+ * @description 给对象 设置一个 不可枚举的属性
+ */
 export const def = (obj: object, key: string | symbol, value: any) => {
   Object.defineProperty(obj, key, {
     configurable: true,

@@ -26,6 +26,21 @@ export interface ReactiveEffectOptions {
   onTrack?: (event: DebuggerEvent) => void
   onTrigger?: (event: DebuggerEvent) => void
   onStop?: () => void
+  /**
+   * Indicates whether the job is allowed to recursively trigger itself when
+   * managed by the scheduler.
+   *
+   * By default, a job cannot trigger itself because some built-in method calls,
+   * e.g. Array.prototype.push actually performs reads as well (#1740) which
+   * can lead to confusing infinite loops.
+   * The allowed cases are component update functions and watch callbacks.
+   * Component update functions may update child component props, which in turn
+   * trigger flush: "pre" watch callbacks that mutates state that the parent
+   * relies on (#1801). Watch callbacks doesn't track its dependencies so if it
+   * triggers itself again, it's likely intentional and it is the user's
+   * responsibility to perform recursive state mutation that eventually
+   * stabilizes (#1727).
+   */
   allowRecurse?: boolean
 }
 
@@ -84,7 +99,7 @@ function createReactiveEffect<T = any>(
 ): ReactiveEffect<T> {
   const effect = function reactiveEffect(): unknown {
     if (!effect.active) {
-      return options.scheduler ? undefined : fn()
+      return fn()
     }
     if (!effectStack.includes(effect)) {
       cleanup(effect)
@@ -120,26 +135,48 @@ function cleanup(effect: ReactiveEffect) {
   }
 }
 
+/**
+ * 是否依赖跟踪
+ */
 let shouldTrack = true
 const trackStack: boolean[] = []
 
+/**
+ * 关闭依赖跟踪
+ */
 export function pauseTracking() {
+  // 存储上一次的 状态
   trackStack.push(shouldTrack)
   shouldTrack = false
 }
 
+/**
+ * 开启依赖跟踪
+ */
 export function enableTracking() {
+  // 存储上一次的状态
   trackStack.push(shouldTrack)
   shouldTrack = true
 }
 
+/**
+ * 重置依赖更新
+ */
 export function resetTracking() {
+  // 恢复到上一次的状态
   const last = trackStack.pop()
   shouldTrack = last === undefined ? true : last
 }
 
+/**
+ * @description 获取依赖
+ * @param {object} target 依赖的目标对象
+ * @param {TrackOpTypes} type
+ * @param {unknown} key 依赖的key
+ */
 export function track(target: object, type: TrackOpTypes, key: unknown) {
   if (!shouldTrack || activeEffect === undefined) {
+    // 如果 没有开启依赖追踪 或者 依赖副作用为空 直接结束 依赖收集
     return
   }
   let depsMap = targetMap.get(target)
@@ -164,6 +201,15 @@ export function track(target: object, type: TrackOpTypes, key: unknown) {
   }
 }
 
+/**
+ * @description 依赖更新
+ * @param {object} target 依赖的目标对象
+ * @param {TriggerOpTypes} type
+ * @param {unknown} [key] 依赖的key
+ * @param {unknown} [newValue] 新值
+ * @param {unknown} [oldValue] 旧值
+ * @param {(Map<unknown, unknown> | Set<unknown>)} [oldTarget]
+ */
 export function trigger(
   target: object,
   type: TriggerOpTypes,

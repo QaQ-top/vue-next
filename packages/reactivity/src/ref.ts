@@ -89,19 +89,30 @@ export function unref<T>(ref: T): T extends Ref<infer V> ? V : T {
   return isRef(ref) ? (ref.value as any) : ref
 }
 
+/**
+ * @description 为 setup 返回值通过 代理配置
+ */
 const shallowUnwrapHandlers: ProxyHandler<any> = {
+  // 解包
   get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
   set: (target, key, value, receiver) => {
     const oldValue = target[key]
     if (isRef(oldValue) && !isRef(value)) {
+      // 旧值是 ref 新值不是ref
+      // 就直接改变 旧ref的 value
       oldValue.value = value
       return true
     } else {
+      // 否则 直接改变 这个属性的值
       return Reflect.set(target, key, value, receiver)
     }
   }
 }
 
+/**
+ * @description 解包代理
+ * @info `get` 内部使用了 `unref` 获取`.value`值 所以在模板中可以直接使用 `ref 变量` 不需要`.value`
+ */
 export function proxyRefs<T extends object>(
   objectWithRefs: T
 ): ShallowUnwrapRef<T> {

@@ -26,8 +26,7 @@ import { AppContext } from './apiCreateApp'
 import {
   SuspenseImpl,
   isSuspense,
-  SuspenseBoundary,
-  normalizeSuspenseChildren
+  SuspenseBoundary
 } from './components/Suspense'
 import { DirectiveBinding } from './directives'
 import { TransitionHooks } from './components/BaseTransition'
@@ -40,7 +39,6 @@ import {
 import { RendererNode, RendererElement } from './renderer'
 import { NULL_DYNAMIC_COMPONENT } from './helpers/resolveAssets'
 import { hmrDirtyComponents } from './hmr'
-import { setCompiledSlotRendering } from './helpers/renderSlot'
 import { convertLegacyComponent } from './compat/component'
 import { convertLegacyVModelProps } from './compat/componentVModel'
 import { defineLegacyVNodeProperties } from './compat/renderFn'
@@ -198,7 +196,10 @@ export interface VNode<
 
   /**
    * vnode 类型
+   * @internal __COMPAT__ only
    */
+  isCompatRoot?: true
+
   type: VNodeTypes
   /**
    * vnode 属性 (模板上定义的 attr)
@@ -309,7 +310,7 @@ export const blockStack: (VNode[] | null)[] = []
 /**
  * 当前 区块
  */
-let currentBlock: VNode[] | null = null
+export let currentBlock: VNode[] | null = null
 
 /**
  * Open a block.
@@ -348,7 +349,7 @@ export function closeBlock() {
 // Only tracks when this value is > 0
 // We are not using a simple boolean because this value may need to be
 // incremented/decremented by nested usage of v-once (see below)
-let shouldTrack = 1
+let isBlockTreeEnabled = 1
 
 /**
  * Block tracking sometimes needs to be disabled, for example during the
@@ -367,7 +368,7 @@ let shouldTrack = 1
  * @private 设置 区块 跟踪
  */
 export function setBlockTracking(value: number) {
-  shouldTrack += value
+  isBlockTreeEnabled += value
 }
 
 /**
@@ -416,19 +417,21 @@ export function createBlock(
    * save current block children on the block vnode
    * 把动态子 设置到 dynamicChildren
    */
-  vnode.dynamicChildren = currentBlock || (EMPTY_ARR as any)
+  vnode.dynamicChildren =
+    isBlockTreeEnabled > 0 ? currentBlock || (EMPTY_ARR as any) : null
 
   /**
    * close block
    * 结束 当前 区块
    */
   closeBlock()
+
   // a block is always going to be patched, so track it as a child of its
   // parent block
   /**
    * 如果 是跟踪 并且 当前区块存在 把自己加到该区块
    */
-  if (shouldTrack > 0 && currentBlock) {
+  if (isBlockTreeEnabled > 0 && currentBlock) {
     currentBlock.push(vnode)
   }
 
@@ -594,13 +597,14 @@ function _createVNode(
     // 克隆 当前 vnode
     const cloned = cloneVNode(type, props, true /* mergeRef: true */)
     if (children) {
-      //
+      // 将子元素 赋值 给 克隆后的 vnode
       normalizeChildren(cloned, children)
     }
     return cloned
   }
 
   // class component normalization.
+  // 如果是 规范的 class 组件
   if (isClassComponent(type)) {
     type = type.__vccOpts
   }
@@ -696,13 +700,11 @@ function _createVNode(
 
   // normalize suspense children
   if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
-    const { content, fallback } = normalizeSuspenseChildren(vnode)
-    vnode.ssContent = content
-    vnode.ssFallback = fallback
+    ;(type as typeof SuspenseImpl).normalize(vnode)
   }
 
   if (
-    shouldTrack > 0 &&
+    isBlockTreeEnabled > 0 &&
     // avoid a block node from tracking itself
     !isBlockNode &&
     // has current parent block
@@ -839,7 +841,6 @@ function deepCloneVNode(vnode: VNode): VNode {
 export function createTextVNode(text: string = ' ', flag: number = 0): VNode {
   return createVNode(Text, null, text, flag)
 }
-console.log(createVNode('div', null, 'ffff', 0))
 
 /**
  * @description 创建静态 文本 vnode
@@ -884,13 +885,18 @@ export function normalizeVNode(child: VNodeChild): VNode {
     // 子是数组 就包裹一层 Fragment 再返回
   } else if (isArray(child)) {
     // fragment
-    return createVNode(Fragment, null, child)
+    return createVNode(
+      Fragment,
+      null,
+      // #3666, avoid reference pollution when reusing vnode
+      child.slice()
+    )
 
     // 子是对象 存在el 就对子克隆后返回 没有el 就直接返回
   } else if (typeof child === 'object') {
     // already vnode, this should be the most common since compiled templates
     // always produce all-vnode children arrays
-    return child.el === null ? child : cloneVNode(child)
+    return cloneIfMounted(child)
 
     // 其他情况处理成 文本 再返回
   } else {
@@ -932,9 +938,9 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
       if (slot) {
         // _c marker is added by withCtx() indicating this is a compiled slot
         // withCtx()添加了_c标记，表明这是一个已编译的槽
-        slot._c && setCompiledSlotRendering(1)
+        slot._c && (slot._d = false)
         normalizeChildren(vnode, slot())
-        slot._c && setCompiledSlotRendering(-1)
+        slot._c && (slot._d = true)
       }
       return
     } else {
@@ -952,12 +958,12 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
         // its slot type is determined by its parent's slot type.
         // 子组件从父组件接收转发的槽，其槽的类型由其父组件的槽类型决定
         if (
-          currentRenderingInstance.vnode.patchFlag & PatchFlags.DYNAMIC_SLOTS
+          (currentRenderingInstance.slots as RawSlots)._ === SlotFlags.STABLE
         ) {
+          ;(children as RawSlots)._ = SlotFlags.STABLE
+        } else {
           ;(children as RawSlots)._ = SlotFlags.DYNAMIC
           vnode.patchFlag |= PatchFlags.DYNAMIC_SLOTS
-        } else {
-          ;(children as RawSlots)._ = SlotFlags.STABLE
         }
       }
     }
@@ -967,8 +973,10 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
     children = { default: children, _ctx: currentRenderingInstance }
     type = ShapeFlags.SLOTS_CHILDREN
   } else {
+    // 如果 是 其它 基础类型的数据 就转为 字符串
     children = String(children)
     // force teleport children to array so it can be moved around
+    // 如果 vnode 是 Teleport 就把 子 转成 数组 TextVNode
     if (shapeFlag & ShapeFlags.TELEPORT) {
       type = ShapeFlags.ARRAY_CHILDREN
       children = [createTextVNode(children as string)]
@@ -976,6 +984,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
       type = ShapeFlags.TEXT_CHILDREN
     }
   }
+  // 最后赋值 给 vnode
   vnode.children = children as VNodeNormalizedChildren
   vnode.shapeFlag |= type
 }

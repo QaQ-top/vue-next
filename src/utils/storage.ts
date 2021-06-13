@@ -27,9 +27,9 @@ console.log(Store)
 // 创建 数据缓存 函数
 const getCache = (fn: (...agn: any[]) => any) => {
   const cache: any = {}
-  return (...agn: any) => {
-    let a = fn(cache, ...agn)
-    return a
+  return (key: string, watch: () => any) => {
+    const value = cache[key]
+    return value || (cache[key] = fn(watch))
   }
 }
 
@@ -45,8 +45,8 @@ const aks = (item: number) => {
 }
 
 // 避免 多次同 一个属性值 的 watch
-const getWatchStopHandles = getCache((cache, key, fn) => {
-  return cache[key] || (cache[key] = watchEffect(fn))
+const getWatchStopHandles = getCache(watch => {
+  return watchEffect(watch)
 })
 
 // 设置 本地存储 防抖
@@ -60,10 +60,8 @@ getKeys(key => {
   })
 })
 
-// const getComputed = getCache((cache, Storage, key) => {
-//   return cache[key] || (cache[key] = computed(() => {
-//     return Storage[key];
-//   }))
+// const getComputed = getCache((watch) => {
+//   return computed(watch)
 // });
 
 /**
