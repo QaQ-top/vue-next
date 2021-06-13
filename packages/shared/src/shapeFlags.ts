@@ -7,11 +7,11 @@ export const enum ShapeFlags {
    */
   ELEMENT = 1,
   /**
-   * 功能性组件
+   * 函数组件
    */
   FUNCTIONAL_COMPONENT = 1 << 1, // 010
   /**
-   * Component 组件
+   * 状态 组件
    */
   STATEFUL_COMPONENT = 1 << 2, // 0100
   /**

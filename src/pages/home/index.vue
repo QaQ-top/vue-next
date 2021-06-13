@@ -68,12 +68,6 @@ export default defineComponent({
   components: {
     Test
   },
-  mixins: [{
-    mounted: () => {
-      console.log("FFFFF")
-
-    }
-  }]
 })
 </script>
 

@@ -27,6 +27,9 @@ export interface SuspenseProps {
   timeout?: string | number
 }
 
+/**
+ * @description 是否是Suspense（异步组件）
+ */
 export const isSuspense = (type: any): boolean => type.__isSuspense
 
 // Suspense exposes a component-like API, and is treated like a component

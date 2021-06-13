@@ -63,7 +63,7 @@ export interface KeepAliveContext extends ComponentRenderContext {
 }
 
 /**
- * 判断是否是 keep-alive 组件
+ * @description 判断是否是 keep-alive 组件
  */
 export const isKeepAlive = (vnode: VNode): boolean =>
   (vnode.type as any).__isKeepAlive

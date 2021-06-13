@@ -613,13 +613,16 @@ function _createVNode(
   // class & style normalization.
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
+    // 如果 props 是代理对象 就进行克隆(浅)
     if (isProxy(props) || InternalObjectKey in props) {
       props = extend({}, props)
     }
     let { class: klass, style } = props
+    // class 不是字符串时 进行处理(合并成一个字符串)
     if (klass && !isString(klass)) {
       props.class = normalizeClass(klass)
     }
+    // 如果是对象 就将 style 标准化(字符串不用处理)
     if (isObject(style)) {
       // reactive state objects need to be cloned since they are likely to be
       // mutated
@@ -631,15 +634,16 @@ function _createVNode(
   }
 
   // encode the vnode type information into a bitmap
+  // 保证组件类型正确
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : __FEATURE_SUSPENSE__ && isSuspense(type)
       ? ShapeFlags.SUSPENSE
       : isTeleport(type)
         ? ShapeFlags.TELEPORT
-        : isObject(type)
+        : isObject(type) // 状态组件
           ? ShapeFlags.STATEFUL_COMPONENT
-          : isFunction(type)
+          : isFunction(type) // 函数组件
             ? ShapeFlags.FUNCTIONAL_COMPONENT
             : 0
 
