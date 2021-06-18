@@ -26,7 +26,7 @@ export default defineComponent({
     },
     eky: {
       default: (props: any) => {
-        console.log(props.eky)
+        // console.log(props.eky)
         return "454"
       }
     }
@@ -71,7 +71,7 @@ export default defineComponent({
     }
   },
   deactivated() {
-    console.log(this)
+    // console.log(this)
   },
   setup(props, ctx) {
     ctx.emit('foo', 1,2,3,4,5)

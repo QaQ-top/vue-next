@@ -446,15 +446,15 @@ export interface ComponentInternalInstance {
 
   // lifecycle
   /**
-   * 是否可以使用 挂载钩子
+   * 是否挂载
    */
   isMounted: boolean
   /**
-   * 是否可以使用 卸载钩子  KeepAlive时无法使用
+   * 是否卸载  KeepAlive时无法使用
    */
   isUnmounted: boolean
   /**
-   * 是否可以使用 禁用钩子  KeepAlive时才能使用
+   * 是否禁用  KeepAlive时才能使用
    */
   isDeactivated: boolean
   /**
@@ -629,7 +629,6 @@ export function createComponentInstance(
   instance.root = parent ? parent.root : instance
   // 设置 emit 事件
   instance.emit = emit.bind(null, instance)
-  console.log(instance)
   return instance
 }
 

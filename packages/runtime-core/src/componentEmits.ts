@@ -61,15 +61,6 @@ export function emit(
   event: string,
   ...rawArgs: any[]
 ) {
-  console.log(
-    {
-      instance,
-      event,
-      rawArgs
-    },
-    'emit'
-  )
-
   /**
    * 获取当前 组件 的 vnode (vnode 上有 绑定的 父组件自定义的事件)
    */

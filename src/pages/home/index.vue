@@ -57,10 +57,10 @@ export default defineComponent({
       b,
       status,
       um: (...arr: any[]) => {
-        console.log(arr)
+        // console.log(arr)
       },
       foo: (...array: any[]) => {
-        console.log(array)
+        // console.log(array)
       }
     }
   },
@@ -69,7 +69,7 @@ export default defineComponent({
   },
   mixins: [{
     mounted: () => {
-      console.log("FFFFF")
+      // console.log("FFFFF")
 
     }
   }]

@@ -2271,7 +2271,6 @@ function baseCreateRenderer(
 
     const shouldInvokeDirs = shapeFlag & ShapeFlags.ELEMENT && dirs
 
-    // console.log(vnode)
     // 在卸载前 触发 vnode 的生命周期
     let vnodeHook: VNodeHook | undefined | null
     if ((vnodeHook = props && props.onVnodeBeforeUnmount)) {
@@ -2287,6 +2286,7 @@ function baseCreateRenderer(
       unmountComponent(vnode.component!, parentSuspense, doRemove)
     } else {
       if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
+        // NOT GO 卸载 异步组件
         vnode.suspense!.unmount(parentSuspense, doRemove)
         return
       }
@@ -2407,6 +2407,7 @@ function baseCreateRenderer(
     const { bum, effects, update, subTree, um } = instance
 
     // beforeUnmount hook
+    // 执行卸载前的 生命钩子
     if (bum) {
       invokeArrayFns(bum)
     }
@@ -2417,6 +2418,7 @@ function baseCreateRenderer(
       instance.emit('hook:beforeDestroy')
     }
 
+    // 关闭 组件内部 注册的 的所有副作用
     if (effects) {
       for (let i = 0; i < effects.length; i++) {
         stop(effects[i])
@@ -2425,11 +2427,14 @@ function baseCreateRenderer(
     // update may be null if a component is unmounted before its async
     // setup has resolved.
     if (update) {
+      // 关闭 更新的 副作用
       stop(update)
+      // 然后从组件的 根 vnode 开始卸载 (umount内部会判断vnode然后再调用unmountComponent)
       unmount(subTree, instance, parentSuspense, doRemove)
     }
     // unmounted hook
     if (um) {
+      // 讲卸载后的钩子加入 后置队列 执行
       queuePostRenderEffect(um, parentSuspense)
     }
     if (
@@ -2441,6 +2446,8 @@ function baseCreateRenderer(
         parentSuspense
       )
     }
+
+    // 在后置队列 中更改 实例为 已经卸载
     queuePostRenderEffect(() => {
       instance.isUnmounted = true
     }, parentSuspense)
@@ -2448,6 +2455,7 @@ function baseCreateRenderer(
     // A component with async dep inside a pending suspense is unmounted before
     // its async dep resolves. This should remove the dep from the suspense, and
     // cause the suspense to resolve immediately if that was the last dep.
+    // NOT GO 载异步组件处理
     if (
       __FEATURE_SUSPENSE__ &&
       parentSuspense &&
@@ -2468,6 +2476,15 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * @description 卸载子 vnode
+   * @param {*} children
+   * @param {*} parentComponent
+   * @param {*} parentSuspense
+   * @param {boolean} [doRemove=false]
+   * @param {boolean} [optimized=false]
+   * @param {number} [start=0]
+   */
   const unmountChildren: UnmountChildrenFn = (
     children,
     parentComponent,
