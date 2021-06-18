@@ -238,6 +238,9 @@ export interface VNode<
    * 指令绑定
    */
   dirs: DirectiveBinding[] | null
+  /**
+   * transition 的钩子
+   */
   transition: TransitionHooks<HostElement> | null
 
   // DOM
@@ -278,7 +281,7 @@ export interface VNode<
 
   // optimization only
   /**
-   * vnode 的类型 shared shapeFlag.ts 有分类
+   * vnode 的类型 ( 这里会 将 vnode 自己的 类型 和 子元素 类型合并 ) shared shapeFlag.ts 有分类
    */
   shapeFlag: number
   /**
@@ -644,7 +647,7 @@ function _createVNode(
   }
 
   // encode the vnode type information into a bitmap
-  // 保证组件类型正确
+  // 保证 vnode 类型正确
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : __FEATURE_SUSPENSE__ && isSuspense(type)

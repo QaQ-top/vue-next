@@ -543,7 +543,7 @@ function baseCreateRenderer(
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
   /**
-   * @description
+   * @description 对比 vnode 并且更新页面 dom (内部进行  diff)
    * @param n1 更新前的 vnode
    * @param n2 更新后的 vnode
    * @param container 当前更改元素节点的父元素节点
@@ -599,21 +599,30 @@ function baseCreateRenderer(
     }
 
     const { type, ref, shapeFlag } = n2
+    // 根据 新vnode 的类型进行判断处理
     switch (type) {
       case Text:
+        // 处理 文本类型的 vnode
         processText(n1, n2, container, anchor)
         break
+
       case Comment:
+        // 处理 注释类型的 vnode
         processCommentNode(n1, n2, container, anchor)
         break
+
       case Static:
+        // 处理 静态类型的 vnode
         if (n1 == null) {
           mountStaticNode(n2, container, anchor, isSVG)
         } else if (__DEV__) {
+          // 静态节点 不做跟新处理 这里是 为了 开发环境的 热更新
           patchStaticNode(n1, n2, container, isSVG)
         }
         break
+
       case Fragment:
+        // 处理 Fragment类型的 vnode
         processFragment(
           n1,
           n2,
@@ -626,7 +635,9 @@ function baseCreateRenderer(
           optimized
         )
         break
+
       default:
+        // 处理 dom
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(
             n1,
@@ -688,21 +699,40 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * @description 对比 文本类型的 新 旧 vnode 并且更新 页面dom
+   * @param {*} n1 旧 vnode
+   * @param {*} n2 新 vnode
+   * @param {*} container 当前 vnode 的父元素
+   * @param {*} anchor 锚点(这个锚点 是 父元素的子元素)
+   */
   const processText: ProcessTextOrCommentFn = (n1, n2, container, anchor) => {
     if (n1 == null) {
+      // 如果 旧node 不存在
+      // 创建文本节点 并且 传入 父节点 的 锚点前面
       hostInsert(
         (n2.el = hostCreateText(n2.children as string)),
         container,
         anchor
       )
     } else {
+      // 旧vnode 存在 就直接使用上 次的 文本节点
       const el = (n2.el = n1.el!)
+      // 两个 vnode 的 子 不相等时(Text 类型的vnode children会是 基本数据类型)
       if (n2.children !== n1.children) {
+        // 设置 el 的 文本类容
         hostSetText(el, n2.children as string)
       }
     }
   }
 
+  /**
+   * @description 处理 注释类型的 新 旧 vnode 并且更新 页面dom
+   * @param {*} n1 旧 vnode
+   * @param {*} n2 新 vnode
+   * @param {*} container 当前 vnode 的父元素
+   * @param {*} anchor 锚点(这个锚点 是 父元素的子元素)
+   */
   const processCommentNode: ProcessTextOrCommentFn = (
     n1,
     n2,
@@ -710,6 +740,8 @@ function baseCreateRenderer(
     anchor
   ) => {
     if (n1 == null) {
+      // 如果 旧node 不存在
+      // 创建 注释节点 并且 传入 父节点 的 锚点前面
       hostInsert(
         (n2.el = hostCreateComment((n2.children as string) || '')),
         container,
@@ -717,10 +749,18 @@ function baseCreateRenderer(
       )
     } else {
       // there's no support for dynamic comments
+      // 否则 不变 (注释内容不会有动态变化)
       n2.el = n1.el
     }
   }
 
+  /**
+   * @description
+   * @param {VNode} n2 新 vnode
+   * @param {RendererElement} container 当前 vnode 的父元素
+   * @param {(RendererNode | null)} anchor 锚点(这个锚点 是 父元素的子元素)
+   * @param {boolean} isSVG 是否是 svg
+   */
   const mountStaticNode = (
     n2: VNode,
     container: RendererElement,
@@ -729,6 +769,8 @@ function baseCreateRenderer(
   ) => {
     // static nodes are only present when used with compiler-dom/runtime-dom
     // which guarantees presence of hostInsertStaticContent.
+    // 直接 将静态字符串 转 dom 然后传入到 container
+    // 返回 第一dom 和 最后一个dom
     ;[n2.el, n2.anchor] = hostInsertStaticContent!(
       n2.children as string,
       container,
@@ -764,6 +806,12 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * @description @description 循环移动静态节点
+   * @param {VNode} { el, anchor } 传入 vnode
+   * @param container 目标元素
+   * @param  nextSibling 目标元素的 某个子元素
+   */
   const moveStaticNode = (
     { el, anchor }: VNode,
     container: RendererElement,
@@ -778,6 +826,10 @@ function baseCreateRenderer(
     hostInsert(anchor!, container, nextSibling)
   }
 
+  /**
+   * @description @description 删除全部静态节点
+   * @param {VNode} { el, anchor } 传入 vnode
+   */
   const removeStaticNode = ({ el, anchor }: VNode) => {
     let next
     while (el && el !== anchor) {
@@ -859,6 +911,9 @@ function baseCreateRenderer(
       // mount children first, since some props may rely on child content
       // being already rendered, e.g. `<select value>`
       if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        // 这里是 处理 shapeFlag = 9 的 也就是 ELEMENT 加 TEXT_CHILDREN
+        // <div>dfsa</div>  vnode 会是9 也就代表 子是 单纯的 字符串
+        // 可以 直接设置 元素节点 的内容
         hostSetElementText(el, vnode.children as string)
       } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         mountChildren(
@@ -974,6 +1029,18 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * @description 挂载 子 vnode
+   * @param {*} children 子组件
+   * @param {*} container vnode的 父元素 (要插入的 目标 dom)
+   * @param {*} anchor 锚点
+   * @param {*} parentComponent 当前vnode 所在组件实例
+   * @param {*} parentSuspense
+   * @param {boolean} isSVG 是否是svg
+   * @param {*} slotScopeIds  插槽名命ID
+   * @param {*} optimized  是否优化 (开启后 这里会 clone vnode 后进行页面更新处理)
+   * @param {number} [start=0] 从那个子开始 插入
+   */
   const mountChildren: MountChildrenFn = (
     children,
     container,
@@ -986,9 +1053,12 @@ function baseCreateRenderer(
     start = 0
   ) => {
     for (let i = start; i < children.length; i++) {
+      // 处理 子节点 (这里感觉始值都会调用 cloneIfMounted， normalizeVNode 内部也有调用cloneIfMounted，)
       const child = (children[i] = optimized
         ? cloneIfMounted(children[i] as VNode)
         : normalizeVNode(children[i]))
+
+      // 调用 patch 对子 vnode 进行 页面渲染 (这里永远不会有 旧 vnode)
       patch(
         null,
         child,
@@ -1253,6 +1323,18 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * @description
+   * @param {(VNode | null)} n1 旧 vnode
+   * @param {VNode} n2 新 vnode
+   * @param {RendererElement} container 当前 vnode 的父元素
+   * @param {(RendererNode | null)} anchor 锚点(这个锚点 是 父元素的子元素)
+   * @param {(ComponentInternalInstance | null)} parentComponent 当前vnode 所在的事件 实例
+   * @param {(SuspenseBoundary | null)} parentSuspense 默认 null
+   * @param {boolean} isSVG 是否是 svg
+   * @param {(string[] | null)} slotScopeIds 插槽名命ID
+   * @param {boolean} optimized 是否优化处理
+   */
   const processFragment = (
     n1: VNode | null,
     n2: VNode,
@@ -1264,15 +1346,33 @@ function baseCreateRenderer(
     slotScopeIds: string[] | null,
     optimized: boolean
   ) => {
+    // 获取 开始 锚点 旧节点不存在时 自动生成 开始锚点
     const fragmentStartAnchor = (n2.el = n1 ? n1.el : hostCreateText(''))!
+    // 获取 结束 锚点 旧节点不存在时 自动生成 结束锚点
     const fragmentEndAnchor = (n2.anchor = n1 ? n1.anchor : hostCreateText(''))!
 
+    console.log({
+      n1,
+      n2,
+      container,
+      anchor,
+      parentComponent,
+      parentSuspense,
+      isSVG,
+      slotScopeIds,
+      optimized
+    })
+
     let { patchFlag, dynamicChildren, slotScopeIds: fragmentSlotScopeIds } = n2
+
+    // dynamicChildren 存在 表示 自己 或者 自己的子存在 动态变化
+    // 后续 将 直接 克隆 vnode
     if (dynamicChildren) {
       optimized = true
     }
 
     // check if this is a slot fragment with :slotted scope ids
+    // 合并 新、旧vnode 的 slotScopeIds
     if (fragmentSlotScopeIds) {
       slotScopeIds = slotScopeIds
         ? slotScopeIds.concat(fragmentSlotScopeIds)
@@ -1287,11 +1387,14 @@ function baseCreateRenderer(
     }
 
     if (n1 == null) {
+      // 如果旧vnode 不存在
+      // 先将 模板的 开始结束锚点 插入父元素中
       hostInsert(fragmentStartAnchor, container, anchor)
       hostInsert(fragmentEndAnchor, container, anchor)
       // a fragment can only have array children
       // since they are either generated by the compiler, or implicitly created
       // from arrays.
+      // 再 根据 Fragment 的结束 锚点 循环 渲染 子元素
       mountChildren(
         n2.children as VNodeArrayChildren,
         container,
@@ -2349,11 +2452,15 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * @description 删除页面中 vndoe 的 el 并且执行 Transition 提供的动画函数 和 钩子
+   * @param {*} vnode
+   */
   const remove: RemoveFn = vnode => {
     const { type, el, anchor, transition } = vnode
-    console.log(type, el, anchor, transition)
     // 删除 模板节点
     if (type === Fragment) {
+      // 模板(<template v-if="status">) 100% 有 anchor，processFragment 内 如果没有锚点 会生成 锚点
       removeFragment(el!, anchor!)
       return
     }
@@ -2363,10 +2470,16 @@ function baseCreateRenderer(
       return
     }
 
-    //
+    /**
+     * @description 删除 dom 并且触发 transition 离开后的钩子
+     */
     const performRemove = () => {
+      // 删除 dom
       hostRemove(el!)
+      // 判断 transition 并且不是持续存在的
+      // 并且有 afterLeave 钩子
       if (transition && !transition.persisted && transition.afterLeave) {
+        // 执行 transition 离开后的钩子
         transition.afterLeave()
       }
     }
@@ -2376,18 +2489,28 @@ function baseCreateRenderer(
       transition &&
       !transition.persisted
     ) {
+      // leave delayLeave 是开发人员提供的
+      // 执行时 传入 dom(el) 和 删除dom的函数(performRemove)
       const { leave, delayLeave } = transition
       const performLeave = () => leave(el!, performRemove)
       if (delayLeave) {
+        // 延迟离开
         delayLeave(vnode.el!, performRemove, performLeave)
       } else {
+        // 离开
         performLeave()
       }
     } else {
+      // 没有 transition 时直接删除
       performRemove()
     }
   }
 
+  /**
+   * @description 循环删除一段 dom
+   * @param {RendererNode} cur 开始节点
+   * @param {RendererNode} end 结束节点
+   */
   const removeFragment = (cur: RendererNode, end: RendererNode) => {
     // For fragments, directly remove all contained DOM nodes.
     // (fragment child nodes cannot have transition)
@@ -2523,6 +2646,10 @@ function baseCreateRenderer(
       return vnode.suspense!.next()
     }
     // 传入自己的 原生dom el 下一个节点 或者 anchor 的下一个节点
+    // 这里取当前 vnode 的 anchor 的下一个元素 或者 el 的下一个元素
+    // 是应为 当前vnode的 el 可能被删除
+    // anchor 优先是 因为 Fragment 是 el - anchor 一整块
+    // 正常 element 类型的 vnode 是没有 anchor
     return hostNextSibling((vnode.anchor || vnode.el)!)
   }
 

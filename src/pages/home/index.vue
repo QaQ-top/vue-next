@@ -28,7 +28,11 @@
     <input type="range" v-model="b" />
     <!-- ref 获取多dom -->
     <!-- 函数写法接收两值 (el, refs) 第一个也能是组件， refs 是当前组件内全部 ref 绑定 -->
-    <div :ref='el=>{dom.push(el)}' v-for="(_ , n) in 9" :key="n"  >{{_}}</div>
+    <template v-if="status">
+      4554454
+      <div>999</div>
+      cccc
+    </template>
   </div>
 </template>
 
