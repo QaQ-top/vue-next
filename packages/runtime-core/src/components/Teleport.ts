@@ -19,7 +19,9 @@ export interface TeleportProps {
   to: string | RendererElement | null | undefined
   disabled?: boolean
 }
-
+/**
+ * @description 是否是传送组件 teleport
+ */
 export const isTeleport = (type: any): boolean => type.__isTeleport
 
 const isTeleportDisabled = (props: VNode['props']): boolean =>

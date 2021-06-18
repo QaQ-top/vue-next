@@ -19,7 +19,7 @@ export const enum ShapeFlags {
    */
   TEXT_CHILDREN = 1 << 3, // 01000
   /**
-   * 数组 (模板 for循环 每一个循环块 都是一个独立的 vnode )
+   * 数组 (模板 v-for 循环 每一个循环块 都是一个独立的 vnode )
    */
   ARRAY_CHILDREN = 1 << 4,
   /**

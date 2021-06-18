@@ -234,6 +234,9 @@ export interface VNode<
    * 当前组件的 实例
    */
   component: ComponentInternalInstance | null
+  /**
+   * 指令绑定
+   */
   dirs: DirectiveBinding[] | null
   transition: TransitionHooks<HostElement> | null
 
@@ -541,6 +544,9 @@ const normalizeKey = ({ key }: VNodeProps): VNode['key'] =>
 /**
  * 复制 ref
  * @description 传入一个 vnode 复制传入vnode的 ref 并且 要保证 ref 的 i 是当前渲染的组件实例
+ * ``` js
+ *  { i: instance, r: 'foo' }
+ * ```
  */
 const normalizeRef = ({ ref }: VNodeProps): VNodeNormalizedRefAtom | null => {
   return (ref != null
@@ -617,13 +623,16 @@ function _createVNode(
   // class & style normalization.
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
+    // 如果 props 是代理对象 就进行克隆(浅)
     if (isProxy(props) || InternalObjectKey in props) {
       props = extend({}, props)
     }
     let { class: klass, style } = props
+    // class 不是字符串时 进行处理(合并成一个字符串)
     if (klass && !isString(klass)) {
       props.class = normalizeClass(klass)
     }
+    // 如果是对象 就将 style 标准化(字符串不用处理)
     if (isObject(style)) {
       // reactive state objects need to be cloned since they are likely to be
       // mutated
@@ -635,15 +644,16 @@ function _createVNode(
   }
 
   // encode the vnode type information into a bitmap
+  // 保证组件类型正确
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : __FEATURE_SUSPENSE__ && isSuspense(type)
       ? ShapeFlags.SUSPENSE
       : isTeleport(type)
         ? ShapeFlags.TELEPORT
-        : isObject(type)
+        : isObject(type) // 状态组件
           ? ShapeFlags.STATEFUL_COMPONENT
-          : isFunction(type)
+          : isFunction(type) // 函数组件
             ? ShapeFlags.FUNCTIONAL_COMPONENT
             : 0
 
@@ -659,6 +669,7 @@ function _createVNode(
     )
   }
 
+  // 创建 vnode
   const vnode: VNode = {
     __v_isVNode: true,
     __v_skip: true,
@@ -681,8 +692,8 @@ function _createVNode(
     targetAnchor: null,
     staticCount: 0,
     shapeFlag,
-    patchFlag,
-    dynamicProps,
+    patchFlag, // compiler 阶段产生的
+    dynamicProps, // openBlock createBlock 阶段产生
     dynamicChildren: null,
     appContext: null
   }
@@ -699,6 +710,7 @@ function _createVNode(
     ;(type as typeof SuspenseImpl).normalize(vnode)
   }
 
+  // 下面这个 没太明白
   if (
     isBlockTreeEnabled > 0 &&
     // avoid a block node from tracking itself

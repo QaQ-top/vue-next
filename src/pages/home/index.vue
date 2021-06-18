@@ -10,8 +10,8 @@
 
     </div>
     
-    <Teleport to="body">
-      <Test v-if="status" v-model.lazy="r" :onVnodeBeforeUnmount='um'  @foo="foo" :styel="[`{backgroundColor: 'red'}`]" class="test" foo="fsadf">
+    <Teleport to="body" >
+      <Test v-foo v-if="status" v-model.lazy="r" :onVnodeBeforeUnmount='um'  @foo="foo" :styel="[`{backgroundColor: 'red'}`]" class="test" foo="fsadf">
       <template v-slot:title>
         <h1>标题</h1>
       </template>
@@ -39,7 +39,14 @@ import Test from '../test/index.vue';
 
 export default defineComponent({
   name: 'Home',
+  directives: {
+    foo: {
+      mounted: () => {
 
+      }
+      
+    }
+  },
   setup(props, ctx) {
     const test = ref();
     // 获取多 dom

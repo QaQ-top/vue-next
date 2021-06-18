@@ -2233,7 +2233,7 @@ function baseCreateRenderer(
   }
 
   /**
-   * @description 卸载 vnode
+   * @description 卸载 vnode 触发卸载的钩子(vonde dirs component 的卸载前后 钩子)
    * @param vnode 要卸载 的 虚拟节点
    * @param parentComponent 当前 vnode 所在组件 的实例
    * @param parentSuspense  默认 null
@@ -2282,20 +2282,24 @@ function baseCreateRenderer(
      * 判断组件类型 执行相关操作
      */
     if (shapeFlag & ShapeFlags.COMPONENT) {
-      console.log(vnode)
+      // 如果是组件 卸载组件
       unmountComponent(vnode.component!, parentSuspense, doRemove)
     } else {
       if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
         // NOT GO 卸载 异步组件
+        // 如果是异步组件 卸载异步 组件
         vnode.suspense!.unmount(parentSuspense, doRemove)
         return
       }
 
+      // 存在指令 执行 指令 beforeUnmount 钩子
       if (shouldInvokeDirs) {
         invokeDirectiveHook(vnode, null, parentComponent, 'beforeUnmount')
       }
 
+      // 处理 telepopt 组件
       if (shapeFlag & ShapeFlags.TELEPORT) {
+        // NOT GO 卸载 teleport 组件
         ;(vnode.type as typeof TeleportImpl).remove(
           vnode,
           parentComponent,
@@ -2311,6 +2315,8 @@ function baseCreateRenderer(
           (patchFlag > 0 && patchFlag & PatchFlags.STABLE_FRAGMENT))
       ) {
         // fast path for block nodes: only need to unmount dynamic children.
+        // 块节点的快速路径：只需要卸载动态子节点
+
         unmountChildren(
           dynamicChildren,
           parentComponent,
@@ -2326,12 +2332,14 @@ function baseCreateRenderer(
       ) {
         unmountChildren(children as VNode[], parentComponent, parentSuspense)
       }
-
+      // 如果是删除 vnode 的操作
       if (doRemove) {
+        // 删除页面 元素
         remove(vnode)
       }
     }
 
+    // 在后置任务队列执行 vnode onVnodeUnmounted 钩子 和 dirs unmounted 钩子
     if ((vnodeHook = props && props.onVnodeUnmounted) || shouldInvokeDirs) {
       queuePostRenderEffect(() => {
         vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode)
@@ -2343,16 +2351,19 @@ function baseCreateRenderer(
 
   const remove: RemoveFn = vnode => {
     const { type, el, anchor, transition } = vnode
+    console.log(type, el, anchor, transition)
+    // 删除 模板节点
     if (type === Fragment) {
       removeFragment(el!, anchor!)
       return
     }
-
+    // 删除 静态节点
     if (type === Static) {
       removeStaticNode(vnode)
       return
     }
 
+    //
     const performRemove = () => {
       hostRemove(el!)
       if (transition && !transition.persisted && transition.afterLeave) {
@@ -2477,13 +2488,13 @@ function baseCreateRenderer(
   }
 
   /**
-   * @description 卸载子 vnode
-   * @param {*} children
-   * @param {*} parentComponent
-   * @param {*} parentSuspense
-   * @param {boolean} [doRemove=false]
-   * @param {boolean} [optimized=false]
-   * @param {number} [start=0]
+   * @description 卸载 子vnode
+   * @param {*} children 一组 vnode
+   * @param parentComponent 当前 vnode 所在组件 的实例
+   * @param parentSuspense  默认 null
+   * @param doRemove  是否是删除操作
+   * @param optimized  优化
+   * @param {number} [start=0] 重哪个子节点开始删除 start 是 children 的索引
    */
   const unmountChildren: UnmountChildrenFn = (
     children,

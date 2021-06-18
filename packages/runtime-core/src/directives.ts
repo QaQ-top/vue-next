@@ -117,6 +117,13 @@ export function withDirectives<T extends VNode>(
   return vnode
 }
 
+/**
+ * @description 触发治理钩子函数
+ * @param vnode 虚拟节点
+ * @param prevVNode 上一次的 vnode
+ * @param instance 当前指令所在的实例
+ * @param name 触发事件名称
+ */
 export function invokeDirectiveHook(
   vnode: VNode,
   prevVNode: VNode | null,
@@ -125,11 +132,14 @@ export function invokeDirectiveHook(
 ) {
   const bindings = vnode.dirs!
   const oldBindings = prevVNode && prevVNode.dirs!
+  // 循环执行 全部 绑定指令的 钩子
   for (let i = 0; i < bindings.length; i++) {
     const binding = bindings[i]
     if (oldBindings) {
+      // 将 上一次指令的 value 保存在新指令的 oldValue 上
       binding.oldValue = oldBindings[i].value
     }
+    // 获取要执行的钩子
     let hook = binding.dir[name] as DirectiveHook | DirectiveHook[] | undefined
     if (__COMPAT__ && !hook) {
       hook = mapCompatDirectiveHook(name, binding.dir, instance)
@@ -138,6 +148,7 @@ export function invokeDirectiveHook(
       // disable tracking inside all lifecycle hooks
       // since they can potentially be called inside effects.
       pauseTracking()
+      // 错误处理 触发链式错误捕获
       callWithAsyncErrorHandling(hook, instance, ErrorCodes.DIRECTIVE_HOOK, [
         vnode.el,
         binding,
