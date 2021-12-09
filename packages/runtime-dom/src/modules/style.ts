@@ -14,23 +14,8 @@ export function patchStyle(el: Element, prev: Style, next: Style) {
    * 当前元素 的 style 对象
    */
   const style = (el as HTMLElement).style
-  if (!next) {
-    // 更新对象 如果为空 直接删除元素的 style 属性
-    el.removeAttribute('style')
-  } else if (isString(next)) {
-    if (prev !== next) {
-      // 更新值为 字符串 且与上一次的值不相同
-      const current = style.display
-      style.cssText = next
-      // indicates that the `display` of the element is controlled by `v-show`,
-      // so we always keep the current `display` value regardless of the `style` value,
-      // thus handing over control to `v-show`.
-      // 设置完样式后 确认 是否有 _vod 保证 v-show 行为正确
-      if ('_vod' in el) {
-        style.display = current
-      }
-    }
-  } else {
+  const isCssString = isString(next)
+  if (next && !isCssString) {
     // 因为在解析时 会将 多个 style 对象整合为一个 所以这里 next 不会存在数组
     for (const key in next) {
       setStyle(style, key, next[key])
@@ -41,6 +26,24 @@ export function patchStyle(el: Element, prev: Style, next: Style) {
           setStyle(style, key, '')
         }
       }
+    }
+  } else {
+    const currentDisplay = style.display
+    if (isCssString) {
+      if (prev !== next) {
+        // 更新值为 字符串 且与上一次的值不相同
+        style.cssText = next as string
+      }
+    } else if (prev) {
+      // 更新对象 如果为空 直接删除元素的 style 属性
+      el.removeAttribute('style')
+    }
+    // indicates that the `display` of the element is controlled by `v-show`,
+    // so we always keep the current `display` value regardless of the `style`
+    // value, thus handing over control to `v-show`.
+    // 设置完样式后 确认 是否有 _vod 保证 v-show 行为正确
+    if ('_vod' in el) {
+      style.display = currentDisplay
     }
   }
 }

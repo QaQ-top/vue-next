@@ -13,8 +13,7 @@ export const svgNS = 'http://www.w3.org/2000/svg'
  */
 const doc = (typeof document !== 'undefined' ? document : null) as Document
 
-let tempContainer: HTMLElement
-let tempSVGContainer: SVGElement
+const staticTemplateCache = new Map<string, DocumentFragment>()
 
 /**
  * 提供 渲染、创建、删除、克隆、查找元素, 文本内容更新
@@ -140,24 +139,47 @@ export const nodeOps: Omit<RendererOptions<Node, Element>, 'patchProp'> = {
     /**
      * 创建一个新 div or svg 插入让 innerHTML = content
      */
-    const temp = isSVG
-      ? tempSVGContainer ||
-        (tempSVGContainer = doc.createElementNS(svgNS, 'svg'))
-      : tempContainer || (tempContainer = doc.createElement('div'))
-    temp.innerHTML = content
+    // const temp = isSVG
+    //   ? tempSVGContainer ||
+    //     (tempSVGContainer = doc.createElementNS(svgNS, 'svg'))
+    //   : tempContainer || (tempContainer = doc.createElement('div'))
+    // temp.innerHTML = content
     /**
      * 每次 循环 在 anchor 插入静态的第一个子
      * 插入 都会销毁掉 当前 firstChild
      * 然后给 node 赋值最新的 firstChild 再次循环
      */
-    const first = temp.firstChild as Element
-    let node: Element | null = first
-    let last: Element = node
-    while (node) {
-      last = node
-      nodeOps.insert(node, parent, anchor)
-      node = temp.firstChild as Element
+    // const first = temp.firstChild as Element
+    // let node: Element | null = first
+    // let last: Element = node
+    // while (node) {
+    //   last = node
+    //   nodeOps.insert(node, parent, anchor)
+    //   node = temp.firstChild as Element
+    
+    // <parent> before | first ... last | anchor </parent>
+    const before = anchor ? anchor.previousSibling : parent.lastChild
+    let template = staticTemplateCache.get(content)
+    if (!template) {
+      const t = doc.createElement('template')
+      t.innerHTML = isSVG ? `<svg>${content}</svg>` : content
+      template = t.content
+      if (isSVG) {
+        // remove outer svg wrapper
+        const wrapper = template.firstChild!
+        while (wrapper.firstChild) {
+          template.appendChild(wrapper.firstChild)
+        }
+        template.removeChild(wrapper)
+      }
+      staticTemplateCache.set(content, template)
     }
-    return [first, last]
+    parent.insertBefore(template.cloneNode(true), anchor)
+    return [
+      // first
+      before ? before.nextSibling! : parent.firstChild!,
+      // last
+      anchor ? anchor.previousSibling! : parent.lastChild!
+    ]
   }
 }

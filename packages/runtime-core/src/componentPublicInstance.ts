@@ -1,6 +1,7 @@
 import {
   ComponentInternalInstance,
   Data,
+  getExposeProxy,
   isStatefulComponent
 } from './component'
 import { nextTick, queueJob } from './scheduler'
@@ -15,10 +16,8 @@ import {
   isFunction
 } from '@vue/shared'
 import {
-  ReactiveEffect,
   toRaw,
   shallowReadonly,
-  ReactiveFlags,
   track,
   TrackOpTypes,
   ShallowUnwrapRef,
@@ -72,7 +71,9 @@ import { installCompatInstanceProperties } from './compat/instance'
 export interface ComponentCustomProperties {}
 
 type IsDefaultMixinComponent<T> = T extends ComponentOptionsMixin
-  ? ComponentOptionsMixin extends T ? true : false
+  ? ComponentOptionsMixin extends T
+    ? true
+    : false
   : false
 
 type MixinToOptionTypes<T> = T extends ComponentOptionsBase<
@@ -190,7 +191,7 @@ export type ComponentPublicInstance<
   $emit: EmitFn<E>
   $el: any
   $options: Options & MergedComponentOptionsOverride
-  $forceUpdate: ReactiveEffect
+  $forceUpdate: () => void
   $nextTick: typeof nextTick
   $watch(
     source: string | Function,
@@ -218,76 +219,55 @@ const getPublicInstance = (
   i: ComponentInternalInstance | null
 ): ComponentPublicInstance | ComponentInternalInstance['exposed'] | null => {
   if (!i) return null
-  if (isStatefulComponent(i)) return i.exposed ? i.exposed : i.proxy
+  if (isStatefulComponent(i)) return getExposeProxy(i) || i.proxy
   return getPublicInstance(i.parent)
 }
-/**
- * 公共属性 映射
- */
-const publicPropertiesMap: PublicPropertiesMap = extend(Object.create(null), {
   /**
-   * 获取当前组件实例
+   * 公共属性 映射
+   * $: 获取当前组件实例
+   * $el: 获取当前组件 根dom
+   * $data: 获取代理后的 data
+   * $props: 获取代理后的 props
+   * $attrs: 获取 attrs
+   * $slots: 获取 slots
+   * $refs: 获取 refs (当前组件内所有 ref)
+   * $parent: 获取 当前实例的 父实例
+   * $root: 获取 vue 根实例
+   * $emit: 获取 当前实例 的 emit方法
+   * $options: 获取 当前实例的配置项
+   * $forceUpdate: 强制当前实例渲染，这个更新函数会加入到 调度事件中 的 主任务
+   * $nextTick: 返回 nextTick 并且把 代理实例 传入
+   * $watch: 返回 instanceWatch 并且绑定当前实例为 this
    */
-  $: i => i,
-  /**
-   * 获取当前组件 根dom
-   */
-  $el: i => i.vnode.el,
-  /**
-   * 获取代理后的 data
-   */
-  $data: i => i.data,
-  /**
-   * 获取代理后的 props
-   */
-  $props: i => (__DEV__ ? shallowReadonly(i.props) : i.props),
-  /**
-   * 获取 attrs
-   */
-  $attrs: i => (__DEV__ ? shallowReadonly(i.attrs) : i.attrs),
-  /**
-   * 获取 slots
-   */
-  $slots: i => (__DEV__ ? shallowReadonly(i.slots) : i.slots),
-  /**
-   * 获取 refs (当前组件内所有 ref)
-   */
-  $refs: i => (__DEV__ ? shallowReadonly(i.refs) : i.refs),
-  /**
-   * 获取 当前实例的 父实例
-   */
-  $parent: i => getPublicInstance(i.parent),
-  /**
-   * 获取 vue 根实例
-   */
-  $root: i => getPublicInstance(i.root),
-  /**
-   * 获取 当前实例 的 emit方法
-   */
-  $emit: i => i.emit,
-  /**
-   * 获取 当前实例的配置项
-   */
-  $options: i => (__FEATURE_OPTIONS_API__ ? resolveMergedOptions(i) : i.type),
-  /**
-   * 强制当前实例渲染，这个更新函数会加入到 调度事件中 的 主任务
-   */
-  $forceUpdate: i => () => queueJob(i.update),
-  /**
-   * 返回 nextTick 并且把 代理实例 传入
-   */
-  $nextTick: i => nextTick.bind(i.proxy!),
-  /**
-   * 返回 instanceWatch 并且绑定当前实例为 this
-   */
-  $watch: i => (__FEATURE_OPTIONS_API__ ? instanceWatch.bind(i) : NOOP)
-} as PublicPropertiesMap)
+export const publicPropertiesMap: PublicPropertiesMap = /*#__PURE__*/ extend(
+  Object.create(null),
+  {
+    $: i => i,
+    $el: i => i.vnode.el,
+    $data: i => i.data,
+    $props: i => (__DEV__ ? shallowReadonly(i.props) : i.props),
+    $attrs: i => (__DEV__ ? shallowReadonly(i.attrs) : i.attrs),
+    $slots: i => (__DEV__ ? shallowReadonly(i.slots) : i.slots),
+    $refs: i => (__DEV__ ? shallowReadonly(i.refs) : i.refs),
+    $parent: i => getPublicInstance(i.parent),
+    $root: i => getPublicInstance(i.root),
+    $emit: i => i.emit,
+    $options: i => (__FEATURE_OPTIONS_API__ ? resolveMergedOptions(i) : i.type),
+    $forceUpdate: i => () => queueJob(i.update),
+    $nextTick: i => nextTick.bind(i.proxy!),
+    $watch: i => (__FEATURE_OPTIONS_API__ ? instanceWatch.bind(i) : NOOP)
+  } as PublicPropertiesMap
+)
 
 if (__COMPAT__) {
   installCompatInstanceProperties(publicPropertiesMap)
 }
 
 const enum AccessTypes {
+  /**
+   * 代表其它
+   */
+  OTHER,
   /**
    * 表示 setup 返回的数据
    */
@@ -303,11 +283,7 @@ const enum AccessTypes {
   /**
    * 表示 ctx
    */
-  CONTEXT,
-  /**
-   * 代表其它
-   */
-  OTHER
+  CONTEXT
 }
 
 export interface ComponentRenderContext {
@@ -320,25 +296,25 @@ export interface ComponentRenderContext {
  */
 export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
   get({ _: instance }: ComponentRenderContext, key: string) {
-    const {
-      ctx,
-      setupState,
-      data,
-      props,
-      accessCache,
-      type,
-      appContext
-    } = instance
-
-    // let @vue/reactivity know it should never observe Vue public instances.
-    // 告诉 reactivity 它不应该观察Vue的公共实例
-    if (key === ReactiveFlags.SKIP) {
-      return true
-    }
+    const { ctx, setupState, data, props, accessCache, type, appContext } =
+      instance
 
     // for internal formatters to know that this is a Vue instance
     if (__DEV__ && key === '__isVue') {
       return true
+    }
+
+    // prioritize <script setup> bindings during dev.
+    // this allows even properties that start with _ or $ to be used - so that
+    // it aligns with the production behavior where the render fn is inlined and
+    // indeed has access to all declared variables.
+    if (
+      __DEV__ &&
+      setupState !== EMPTY_OBJ &&
+      setupState.__isScriptSetup &&
+      hasOwn(setupState, key)
+    ) {
+      return setupState[key]
     }
 
     // data / props / ctx
@@ -518,7 +494,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
   ) {
     let normalizedProps
     return (
-      accessCache![key] !== undefined ||
+      !!accessCache![key] ||
       (data !== EMPTY_OBJ && hasOwn(data, key)) ||
       (setupState !== EMPTY_OBJ && hasOwn(setupState, key)) ||
       ((normalizedProps = propsOptions[0]) && hasOwn(normalizedProps, key)) ||
@@ -539,7 +515,7 @@ if (__DEV__ && !__TEST__) {
   }
 }
 
-export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
+export const RuntimeCompiledPublicInstanceProxyHandlers = /*#__PURE__*/ extend(
   {},
   PublicInstanceProxyHandlers,
   {
@@ -564,10 +540,11 @@ export const RuntimeCompiledPublicInstanceProxyHandlers = extend(
   }
 )
 
+// dev only
 // In dev mode, the proxy target exposes the same properties as seen on `this`
 // for easier console inspection. In prod mode it will be an empty object so
 // these properties definitions can be skipped.
-export function createRenderContext(instance: ComponentInternalInstance) {
+export function createDevRenderContext(instance: ComponentInternalInstance) {
   const target: Record<string, any> = {}
 
   // expose internal instance for proxy handlers
@@ -618,20 +595,22 @@ export function exposeSetupStateOnRenderContext(
 ) {
   const { ctx, setupState } = instance
   Object.keys(toRaw(setupState)).forEach(key => {
-    if (key[0] === '$' || key[0] === '_') {
-      warn(
-        `setup() return property ${JSON.stringify(
-          key
-        )} should not start with "$" or "_" ` +
-          `which are reserved prefixes for Vue internals.`
-      )
-      return
+    if (!setupState.__isScriptSetup) {
+      if (key[0] === '$' || key[0] === '_') {
+        warn(
+          `setup() return property ${JSON.stringify(
+            key
+          )} should not start with "$" or "_" ` +
+            `which are reserved prefixes for Vue internals.`
+        )
+        return
+      }
+      Object.defineProperty(ctx, key, {
+        enumerable: true,
+        configurable: true,
+        get: () => setupState[key],
+        set: NOOP
+      })
     }
-    Object.defineProperty(ctx, key, {
-      enumerable: true,
-      configurable: true,
-      get: () => setupState[key],
-      set: NOOP
-    })
   })
 }

@@ -13,18 +13,6 @@ export * from './escapeHtml'
 export * from './looseEqual'
 export * from './toDisplayString'
 
-/**
- * List of @babel/parser plugins that are used for template expression
- * transforms and SFC script transforms. By default we enable proposals slated
- * for ES2020. This will need to be updated as the spec moves forward.
- * Full list at https://babeljs.io/docs/en/next/babel-parser#plugins
- */
-export const babelParserDefaultPlugins = [
-  'bigInt',
-  'optionalChaining',
-  'nullishCoalescingOperator'
-] as const
-
 export const EMPTY_OBJ: { readonly [key: string]: any } = __DEV__
   ? Object.freeze({})
   : {}
@@ -167,11 +155,9 @@ const camelizeRE = /-(\w)/g
 /**
  * @description 用来解析带 - 的字符串 转为驼峰
  */
-export const camelize = cacheStringFunction(
-  (str: string): string => {
-    return str.replace(camelizeRE, (_, c) => (c ? c.toUpperCase() : ''))
-  }
-)
+export const camelize = cacheStringFunction((str: string): string => {
+  return str.replace(camelizeRE, (_, c) => (c ? c.toUpperCase() : ''))
+})
 
 const hyphenateRE = /\B([A-Z])/g
 /**
@@ -192,13 +178,13 @@ export const capitalize = cacheStringFunction(
  * @description 将字符串 第一个字符转为 大写 并且 在前面加上 on
  * @info 方便 读取 props 上绑定的 方法
  */
-export const toHandlerKey = cacheStringFunction(
-  (str: string) => (str ? `on${capitalize(str)}` : ``)
+export const toHandlerKey = cacheStringFunction((str: string) =>
+  str ? `on${capitalize(str)}` : ``
 )
 
 // compare whether a value has changed, accounting for NaN.
 export const hasChanged = (value: any, oldValue: any): boolean =>
-  value !== oldValue && (value === value || oldValue === oldValue)
+  !Object.is(value, oldValue)
 
 /**
  * @description 循环执行一组函数
@@ -236,11 +222,11 @@ export const getGlobalThis = (): any => {
       typeof globalThis !== 'undefined'
         ? globalThis
         : typeof self !== 'undefined'
-          ? self
-          : typeof window !== 'undefined'
-            ? window
-            : typeof global !== 'undefined'
-              ? global
-              : {})
+        ? self
+        : typeof window !== 'undefined'
+        ? window
+        : typeof global !== 'undefined'
+        ? global
+        : {})
   )
 }

@@ -240,8 +240,9 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
 
   [DeprecationTypes.INSTANCE_ATTRS_CLASS_STYLE]: {
     message: componentName =>
-      `Component <${componentName ||
-        'Anonymous'}> has \`inheritAttrs: false\` but is ` +
+      `Component <${
+        componentName || 'Anonymous'
+      }> has \`inheritAttrs: false\` but is ` +
       `relying on class/style fallthrough from parent. In Vue 3, class/style ` +
       `are now included in $attrs and will no longer fallthrough when ` +
       `inheritAttrs is false. If you are already using v-bind="$attrs" on ` +
@@ -322,9 +323,7 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
       `${name}="false" instead of removing it in Vue 3. To remove the attribute, ` +
       `use \`null\` or \`undefined\` instead. If the usage is intended, ` +
       `you can disable the compat behavior and suppress this warning with:` +
-      `\n\n  configureCompat({ ${
-        DeprecationTypes.ATTR_FALSE_VALUE
-      }: false })\n`,
+      `\n\n  configureCompat({ ${DeprecationTypes.ATTR_FALSE_VALUE}: false })\n`,
     link: `https://v3.vuejs.org/guide/migration/attribute-coercion.html`
   },
 
@@ -337,9 +336,7 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
       `Always use explicit "true" or "false" values for enumerated attributes. ` +
       `If the usage is intended, ` +
       `you can disable the compat behavior and suppress this warning with:` +
-      `\n\n  configureCompat({ ${
-        DeprecationTypes.ATTR_ENUMERATED_COERCION
-      }: false })\n`,
+      `\n\n  configureCompat({ ${DeprecationTypes.ATTR_ENUMERATED_COERCION}: false })\n`,
     link: `https://v3.vuejs.org/guide/migration/attribute-coercion.html`
   },
 
@@ -353,9 +350,7 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
       `default if no "tag" prop is specified. If you do not rely on the span ` +
       `for styling, you can disable the compat behavior and suppress this ` +
       `warning with:` +
-      `\n\n  configureCompat({ ${
-        DeprecationTypes.TRANSITION_GROUP_ROOT
-      }: false })\n`,
+      `\n\n  configureCompat({ ${DeprecationTypes.TRANSITION_GROUP_ROOT}: false })\n`,
     link: `https://v3.vuejs.org/guide/migration/transition-group.html`
   },
 
@@ -371,9 +366,7 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
         `usage and intend to use plain functions for functional components, ` +
         `you can disable the compat behavior and suppress this ` +
         `warning with:` +
-        `\n\n  configureCompat({ ${
-          DeprecationTypes.COMPONENT_ASYNC
-        }: false })\n`
+        `\n\n  configureCompat({ ${DeprecationTypes.COMPONENT_ASYNC}: false })\n`
       )
     },
     link: `https://v3.vuejs.org/guide/migration/async-components.html`
@@ -399,13 +392,12 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
     message: (comp: ComponentOptions) => {
       const configMsg =
         `opt-in to ` +
-        `Vue 3 behavior on a per-component basis with \`compatConfig: { ${
-          DeprecationTypes.COMPONENT_V_MODEL
-        }: false }\`.`
+        `Vue 3 behavior on a per-component basis with \`compatConfig: { ${DeprecationTypes.COMPONENT_V_MODEL}: false }\`.`
       if (
-        comp.props && isArray(comp.props)
+        comp.props &&
+        (isArray(comp.props)
           ? comp.props.includes('modelValue')
-          : hasOwn(comp.props, 'modelValue')
+          : hasOwn(comp.props, 'modelValue'))
       ) {
         return (
           `Component delcares "modelValue" prop, which is Vue 3 usage, but ` +
@@ -425,9 +417,7 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
     message:
       `Vue 3's render function API has changed. ` +
       `You can opt-in to the new API with:` +
-      `\n\n  configureCompat({ ${
-        DeprecationTypes.RENDER_FUNCTION
-      }: false })\n` +
+      `\n\n  configureCompat({ ${DeprecationTypes.RENDER_FUNCTION}: false })\n` +
       `\n  (This can also be done per-component via the "compatConfig" option.)`,
     link: `https://v3.vuejs.org/guide/migration/render-function-api.html`
   },
@@ -444,7 +434,7 @@ export const deprecationData: Record<DeprecationTypes, DeprecationData> = {
     message: name =>
       `"${name}" is a Vue 2 private API that no longer exists in Vue 3. ` +
       `If you are seeing this warning only due to a dependency, you can ` +
-      `suppress this warning via { PRIVATE_APIS: 'supress-warning' }.`
+      `suppress this warning via { PRIVATE_APIS: 'suppress-warning' }.`
   }
 }
 
@@ -556,8 +546,8 @@ export function validateCompatConfig(
           warn(
             `Deprecation config "${key}" is compiler-specific and you are ` +
               `running a runtime-only build of Vue. This deprecation should be ` +
-              `configured via compiler options in your build setup instead.`
-            // TODO link to migration build docs on build setup
+              `configured via compiler options in your build setup instead.\n` +
+              `Details: https://v3.vuejs.org/guide/migration/migration-build.html`
           )
         }
       } else {
@@ -569,9 +559,7 @@ export function validateCompatConfig(
 
   if (instance && config[DeprecationTypes.OPTIONS_DATA_MERGE] != null) {
     warn(
-      `Deprecation config "${
-        DeprecationTypes.OPTIONS_DATA_MERGE
-      }" can only be configured globally.`
+      `Deprecation config "${DeprecationTypes.OPTIONS_DATA_MERGE}" can only be configured globally.`
     )
   }
 }

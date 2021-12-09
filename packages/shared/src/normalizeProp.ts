@@ -7,18 +7,19 @@ export type NormalizedStyle = Record<string, string | number>
  * 处理 `:style="[{ 'background-color': 'red', }, 'font-size: 77px; color: red;', { fontSize: ['99px', '20px', '12px'] }]"` 合并处理 `{'background-color': 'red',fontSize: ['99px', '20px', '12px']}`
  * @warning 属性值是数组处理在 `runtime-dom模块 modules/style.ts`
  */
-export function normalizeStyle(value: unknown): NormalizedStyle | undefined {
+export function normalizeStyle(
+  value: unknown
+): NormalizedStyle | string | undefined {
   // 如果是数组 进行 循环递归 直到获取到 是 Object
   if (isArray(value)) {
     const res: NormalizedStyle = {}
     for (let i = 0; i < value.length; i++) {
       const item = value[i]
-      // 递归获取到 最终的 Style 对象
-      const normalized = normalizeStyle(
-        /* 如果是字符串(cssText) 将其转为 对象 */
-        isString(item) ? parseStringStyle(item) : item
-      )
-      // 这里是直接 覆盖 之前存在的 css属性值
+     
+      /* 如果是字符串(cssText) 将其转为 对象 */
+      const normalized = isString(item)
+        ? parseStringStyle(item)
+        : (normalizeStyle(item) as NormalizedStyle) // 递归获取到 最终的 Style 对象
       if (normalized) {
         for (const key in normalized) {
           res[key] = normalized[key]
@@ -26,6 +27,8 @@ export function normalizeStyle(value: unknown): NormalizedStyle | undefined {
       }
     }
     return res
+  } else if (isString(value)) {
+    return value
   } else if (isObject(value)) {
     return value
   }
@@ -57,9 +60,11 @@ export function parseStringStyle(cssText: string): NormalizedStyle {
 /**
  * 把对象 转为 cssText
  */
-export function stringifyStyle(styles: NormalizedStyle | undefined): string {
+export function stringifyStyle(
+  styles: NormalizedStyle | string | undefined
+): string {
   let ret = ''
-  if (!styles) {
+  if (!styles || isString(styles)) {
     return ret
   }
   for (const key in styles) {
@@ -102,4 +107,16 @@ export function normalizeClass(value: unknown): string {
     }
   }
   return res.trim()
+}
+
+export function normalizeProps(props: Record<string, any> | null) {
+  if (!props) return null
+  let { class: klass, style } = props
+  if (klass && !isString(klass)) {
+    props.class = normalizeClass(klass)
+  }
+  if (style) {
+    props.style = normalizeStyle(style)
+  }
+  return props
 }

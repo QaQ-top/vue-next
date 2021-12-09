@@ -11,12 +11,6 @@ const nativeOnRE = /^on[a-z]/
 type DOMRendererOptions = RendererOptions<Node, Element>
 
 /**
- * 判断传入的 第二个参数 是否是 value
- */
-export const forcePatchProp: DOMRendererOptions['forcePatchProp'] = (_, key) =>
-  key === 'value'
-
-/**
  * @description 用来将 模板语法的 attrs 处理成 Html 真正的 Attribute(属性)
  * @param {*} el 元素
  * @param {*} key 属性
@@ -39,48 +33,47 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
   parentSuspense,
   unmountChildren
 ) => {
-  switch (key) {
-    // special
-    case 'class':
-      patchClass(el, nextValue, isSVG)
-      break
-    case 'style':
-      // 样式兼容处理
-      patchStyle(el, prevValue, nextValue)
-      break
-    default:
-      if (isOn(key)) {
-        // ignore v-model listeners
-        if (!isModelListener(key)) {
-          // 处理 vue 绑定事件
-          patchEvent(el, key, prevValue, nextValue, parentComponent)
-        }
-      } else if (shouldSetAsProp(el, key, nextValue, isSVG)) {
-        // 判断 属性key 在 el元素 上的正确性
-        // 处理 dom 属性
-        patchDOMProp(
-          el,
-          key,
-          nextValue,
-          prevChildren,
-          parentComponent,
-          parentSuspense,
-          unmountChildren
-        )
-      } else {
-        // special case for <input v-model type="checkbox"> with
-        // :true-value & :false-value
-        // store value as dom properties since non-string values will be
-        // stringified.
-        // 当 type="checkbox" 时处理 v-bind 的 防止 value 字符串化
-        if (key === 'true-value') {
-          ;(el as any)._trueValue = nextValue
-        } else if (key === 'false-value') {
-          ;(el as any)._falseValue = nextValue
-        }
-        patchAttr(el, key, nextValue, isSVG, parentComponent)
-      }
-      break
+  if (key === 'class') {
+    patchClass(el, nextValue, isSVG)
+  } else if (key === 'style') {
+    // 样式兼容处理
+    patchStyle(el, prevValue, nextValue)
+  } else if (isOn(key)) {
+    // ignore v-model listeners
+    if (!isModelListener(key)) {
+      // 处理 vue 绑定事件
+      patchEvent(el, key, prevValue, nextValue, parentComponent)
+    }
+  } else if (
+    key[0] === '.'
+      ? ((key = key.slice(1)), true)
+      : key[0] === '^'
+      ? ((key = key.slice(1)), false)
+      : shouldSetAsProp(el, key, nextValue, isSVG)
+  ) {
+    // 判断 属性key 在 el元素 上的正确性
+    // 处理 dom 属性
+    patchDOMProp(
+      el,
+      key,
+      nextValue,
+      prevChildren,
+      parentComponent,
+      parentSuspense,
+      unmountChildren
+    )
+  } else {
+    // special case for <input v-model type="checkbox"> with
+    // :true-value & :false-value
+    // store value as dom properties since non-string values will be
+    // stringified.
+    // 当 type="checkbox" 时处理 v-bind 的 防止 value 字符串化
+    if (key === 'true-value') {
+      ;(el as any)._trueValue = nextValue
+    } else if (key === 'false-value') {
+      ;(el as any)._falseValue = nextValue
+    }
+    patchAttr(el, key, nextValue, isSVG, parentComponent)
   }
 }
 
@@ -101,8 +94,8 @@ function shouldSetAsProp(
   if (isSVG) {
     // Svg 不需要特殊 过滤
     // most keys must be set as attribute on svg elements to work
-    // ...except innerHTML
-    if (key === 'innerHTML') {
+    // ...except innerHTML & textContent
+    if (key === 'innerHTML' || key === 'textContent') {
       return true
     }
     // or native onclick with function values

@@ -3,6 +3,7 @@
 // This can come from explicit usage of v-html or innerHTML as a prop in render
 
 import { warn, DeprecationTypes, compatUtils } from '@vue/runtime-core'
+import { includeBooleanAttr } from '@vue/shared'
 
 // functions. The user is responsible for using them with only trusted content.
 
@@ -39,16 +40,28 @@ export function patchDOMProp(
     return
   }
 
-  // 对 非progress(进度条标签) 属性为value的 元素节点 进行处理
-  if (key === 'value' && el.tagName !== 'PROGRESS') {
+  
+  if (
+    key === 'value' &&
+    // 对 非progress(进度条标签) 属性为value的 元素节点 进行处理
+    el.tagName !== 'PROGRESS' &&
+    // custom elements may use _value internally
+    !el.tagName.includes('-')
+  ) {
     // store value as _value as well since
     // non-string values will be stringified.
     // 设置元素 _value 主要避免转html属性值后被 value 类型会变成 string
     el._value = value
     // 处理 null 为空字符串
     const newValue = value == null ? '' : value
-    // 判断是否是新值 避免重复设置元素属性
-    if (el.value !== newValue) {
+    if (
+      // 判断是否是新值 避免重复设置元素属性
+      el.value !== newValue ||
+      // #4956: always set for OPTION elements because its value falls back to
+      // textContent if no value attribute is present. And setting .value for
+      // OPTION has no side effect
+      el.tagName === 'OPTION'
+    ) {
       el.value = newValue
     }
     if (value == null) {
@@ -63,11 +76,11 @@ export function patchDOMProp(
      * 元素节点属性值的类型
      */
     const type = typeof el[key]
-    if (value === '' && type === 'boolean') {
+    if (type === 'boolean') {
       // e.g. <select multiple> compiles to { multiple: '' }
       // 如果元素节点初始值是 boolean,  <select multiple> 这里表示 multiple = true 都是模板编译会是 { multiple: '' }
       // 所以空字符为 true
-      el[key] = true
+      el[key] = includeBooleanAttr(value)
       return
     } else if (value == null && type === 'string') {
       // e.g. <div :id="null">
@@ -77,8 +90,11 @@ export function patchDOMProp(
       return
     } else if (type === 'number') {
       // e.g. <img :width="null">
-      //  元素节点初始值是 number 则空值转为 0
-      el[key] = 0
+      // the value of some IDL attr must be greater than 0, e.g. input.size = 0 -> error
+      try {
+        //  元素节点初始值是 number 则空值转为 0
+        el[key] = 0
+      } catch {}
       el.removeAttribute(key)
       return
     }
@@ -115,7 +131,7 @@ export function patchDOMProp(
   // 对非特殊 属性 属性值 进行错误捕获赋值
   try {
     el[key] = value
-  } catch (e) {
+  } catch (e: any) {
     if (__DEV__) {
       warn(
         `Failed setting prop "${key}" on <${el.tagName.toLowerCase()}>: ` +
