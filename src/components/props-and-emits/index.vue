@@ -1,28 +1,31 @@
 <template>
-  <div>
-    {{types}}
-    <slot name="title" ></slot>
-    <div :class="$style.box" :onVnodeBeforeMount="()=>{}" ><slot></slot></div>
-    <slot name="footer"></slot>
-    <Go />
-  </div>
+  <Content>
+    <template v-slot:title>props 和 emits</template>
+    <template v-slot:content>
+      <div>
+        types >> {{types}} <br />
+        modelValue >> {{modelValue}} <br />
+        <Go />
+      </div>
+    </template>
+  </Content>
 </template>
 
 <script lang="ts" >
-import { defineComponent, h, provide } from 'vue';
+import { defineComponent, h } from 'vue';
 
 export default defineComponent({
-  name: "Test",
+  name: "props-and-emits",
   props: {
     name: {
       type: String,
       default: "54"
     },
     types: {
-      type: [String,Boolean],
+      type: [String, Boolean],
     },
     modelValue: {
-      
+      type: Number,
     },
     eky: {
       default: (props: any) => {
@@ -38,28 +41,14 @@ export default defineComponent({
       }
       return false;
     },
-    'update:modelValue': () => {
+    "update:modelValue": (...data: any[]) => {
       return true
-    }
-  },
-  provide: {
-    foo: {
-      value: 487
-    }
-  },
-  directives: {
-    focus: {
-    
-    }
-  },
-  filters: {
-    timr() {
-
     }
   },
   mixins:[
     {
-      props: ["mixins"]
+      props: ["mixins"],
+      emits: ["golt"]
     }
   ],
   components: {
@@ -70,15 +59,9 @@ export default defineComponent({
       }
     }
   },
-  deactivated() {
-    // console.log(this)
-  },
   setup(props, ctx) {
     ctx.emit('foo', 1,2,3,4,5)
     ctx.emit('update:modelValue', 100)
-    provide('test_provide', {
-      value: 999
-    });
   }
 })
 </script>

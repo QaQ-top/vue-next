@@ -1,36 +1,39 @@
 // 配置信息接口
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import vue from '@vitejs/plugin-vue'
+import vue from '@vitejs/plugin-vue';
+
 export default defineConfig({
   mode: 'development',
-  root: process.cwd(),
+  root: resolve(__dirname),
   base: '/',
-  alias: {
-    '@src': resolve(__dirname, 'src'),
-    '@assets': resolve(__dirname, 'src/assets'),
-    '@models': resolve(__dirname, 'src/models'),
-    '@pages': resolve(__dirname, 'src/pages'),
-    '@route': resolve(__dirname, 'src/route'),
-    '@themes': resolve(__dirname, 'src/themes'),
-    '@utils': resolve(__dirname, 'src/utils'),
-    '@components': resolve(__dirname, 'src/components')
+  resolve:{
+    alias: {
+      '@src': resolve(__dirname),
+      '@assets': resolve(__dirname, 'assets'),
+      '@models': resolve(__dirname, 'models'),
+      '@pages': resolve(__dirname, 'pages'),
+      '@route': resolve(__dirname, 'route'),
+      '@themes': resolve(__dirname, 'themes'),
+      '@utils': resolve(__dirname, 'utils'),
+      '@components': resolve(__dirname, 'components')
+    },
   },
   define: {
-    __VITE__GLOBAL__: JSON.stringify('全局变量'),
+    GLOBAL_ENV: JSON.stringify('全局变量'),
     __VUE_PROD_DEVTOOLS__: true
   },
   plugins: [vue()],
-  esbuild: {
-    target: 'es2020'
-  },
+
   css: {
     modules: {
       scopeBehaviour: 'local',
-      generateScopedName: '[name]-[local]-[hash:base64:5]',
+      // generateScopedName: '[name]-[local]-[hash:base64:5]',
+      generateScopedName: '[local]-[hash:6]',
       localsConvention: 'camelCase'
-    }
+    },
   },
+  
   json: {
     namedExports: true,
     stringify: false

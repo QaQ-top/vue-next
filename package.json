@@ -2,7 +2,7 @@
   "private": true,
   "version": "3.2.24",
   "scripts": {
-    "start": "vite --mode development",
+    "start": "vite --mode development --config ./src/vite.config.ts --host",
     "start:prod": "vite --mode production",
     "dev": "node scripts/dev.js",
     "watch": "node scripts/watch.js",

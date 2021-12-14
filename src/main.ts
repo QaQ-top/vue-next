@@ -3,9 +3,12 @@ import {
   h,
   onErrorCaptured,
   nextTick,
-  compile,
-  registerRuntimeCompiler
 } from 'vue'
+import './themes/index.scss';
+import App from '@src/pages/index.vue';
+
+import Content from '@components/content/index.vue';
+
 
 /**
  * NOT GO 不太理解 这个 nextTick 应该是第一个 then 的 挂载
@@ -16,12 +19,8 @@ import {
  */
 nextTick(() => {
   console.log('')
-})
+});
 
-import './themes/index.scss'
-// import '@src/utils/storage';
-// import App from '@src/pages/index.vue'
-import App from '@src/pages/home/index.vue'
 const root = createApp({
   render: () => {
     return h(App, () => 'App 传递')
@@ -39,6 +38,13 @@ const root = createApp({
     })
   }
   // components: App
+});
+
+
+root.component("Content", Content);
+
+root.directive('foo', {
+  mounted: el => {}
 })
 
 /**
@@ -49,22 +55,15 @@ root.config.errorHandler = (err, vm, info) => {
 }
 
 root.config.globalProperties = {
-  good: 'FFFF'
+  good: '全局属性'
 }
 
-console.log(__VITE__GLOBAL__)
-
-root.component('GlobalComponent', {
-  name: 'GlobalComponent',
-  render: () => {
-    return 'GlobalComponent'
-  }
+console.log({
+  GLOBAL_ENV,
+  "import.meta": import.meta
 })
 
-root.directive('foo', {
-  mounted: el => {}
-})
 
-root.config
 
-root.mount('#root')
+
+root.mount('#root');
