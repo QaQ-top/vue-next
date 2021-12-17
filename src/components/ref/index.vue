@@ -18,8 +18,8 @@ export default defineComponent({
     const htmlDiv = ref<HTMLDivElement>();
     const spans = new Set<HTMLElement>();
     onMounted(() => {
-      console.log(htmlDiv.value);
-      console.log(spans);
+      // console.log(htmlDiv.value);
+      // console.log(spans);
     });
     return {
       htmlDiv,

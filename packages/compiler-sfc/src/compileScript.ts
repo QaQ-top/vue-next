@@ -62,7 +62,16 @@ const WITH_DEFAULTS = 'withDefaults'
 const isBuiltInDir = makeMap(
   `once,memo,if,else,else-if,slot,text,html,on,bind,model,show,cloak,is`
 )
-
+/**
+ * id: 用于给注入的CSS变量加前缀的范围ID
+ * isProd: 生产模式。用于确定是否生成散列的CSS变量
+ * sourceMap: 禁用/启用源代码映射
+ * babelParserPlugins: babel parser 插件
+ * refTransform: 实验性功能 让 ref 修改/访问值可以不通过 .value
+ * propsDestructureTransform: 实验性功能 让 scriptSetup 不使用 defineProps() 解析 例如 prop: num = 4
+ * inlineTemplate: 内联模板 编译模板，并在setup()中直接内联产生的渲染函数。
+ * templateOptions: 内联时模板编译的选项
+ */
 export interface SFCScriptCompileOptions {
   /**
    * Scope ID for prefixing injected CSS variables.

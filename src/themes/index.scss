@@ -1,5 +1,18 @@
+@font-face {
+  font-family: JetBrainsMono;
+  src: url("/JetBrains Mono Italic Nerd Font Complete Mono Windows Compatible.ttf");
+}
+@font-face {
+  font-family: JetBrains;
+  src: url("/JetBrains Mono Regular Nerd Font Complete.ttf");
+}
+
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+body {
+  font-family: 'JetBrains';
 }

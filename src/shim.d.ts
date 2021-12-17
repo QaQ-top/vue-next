@@ -8,5 +8,6 @@ declare module '*.vue' {
   export default component
 }
 
-declare const GLOBAL_ENV: string
+declare const GLOBAL_ENV: string;
+declare const VITE_ROOT: string;
 

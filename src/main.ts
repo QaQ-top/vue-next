@@ -9,6 +9,8 @@ import App from '@src/pages/index.vue';
 
 import Content from '@components/content/index.vue';
 
+import 'highlight.js/styles/atom-one-dark.css';
+
 
 /**
  * NOT GO 不太理解 这个 nextTick 应该是第一个 then 的 挂载
@@ -39,7 +41,6 @@ const root = createApp({
   }
   // components: App
 });
-
 
 root.component("Content", Content);
 

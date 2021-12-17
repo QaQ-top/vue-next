@@ -16,6 +16,7 @@
     </Suspense>
     <TeleportCmponent />
     <Vmodel v-model="propsModel" />
+    <Sfc />
   </div>
 </template>
 
@@ -28,6 +29,7 @@ import SuspenseCmponent from '@components/suspense/index.vue';
 import TeleportCmponent from '@components/teleport/index.vue';
 import Vnode from '@components/vnode/index.vue';
 import Vmodel from '@components/directive/vmodel.vue';
+import Sfc from '@components/sfc/index.vue';
 
 export default defineComponent({
   name: "App",
@@ -35,7 +37,7 @@ export default defineComponent({
     return {
       propsModel: ref(0),
       log(...data: number[]) {
-        console.log('PropsAndEmits: onFoo', data)
+        // console.log('PropsAndEmits: onFoo', data)
       }
     }
   },
@@ -46,7 +48,8 @@ export default defineComponent({
     SuspenseCmponent,
     TeleportCmponent,
     Vnode,
-    Vmodel
+    Vmodel,
+    Sfc
   }
 })
 </script>

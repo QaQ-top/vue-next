@@ -21,7 +21,8 @@ export default defineConfig({
   },
   define: {
     GLOBAL_ENV: JSON.stringify('全局变量'),
-    __VUE_PROD_DEVTOOLS__: true
+    VITE_ROOT: JSON.stringify(resolve(__dirname)),
+    __VUE_PROD_DEVTOOLS__: true,
   },
   plugins: [vue()],
 

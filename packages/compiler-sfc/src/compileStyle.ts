@@ -17,6 +17,20 @@ import { RawSourceMap } from 'source-map'
 import { cssVarsPlugin } from './cssVars'
 import postcssModules from 'postcss-modules'
 
+/**
+ * source <style> 源代码
+ * filename: 当前编译的 .vue 的路径
+ * id:
+ * scoped: 启用/禁用 局部css
+ * trim: 
+ * isProd: 是否是生产环境
+ * isMap:
+ * preprocessLang: 预处理器使用的语言
+ * preprocessCustomRequire: 
+ * postcssOptions: postcss 配置 (具体配置参考 vite 配置项)
+ * postcssPlugins: postcss 插件 (具体配置参考 vite 配置项)
+ */
+
 export interface SFCStyleCompileOptions {
   source: string
   filename: string
@@ -51,6 +65,11 @@ export interface CSSModulesOptions {
   globalModulePaths?: RegExp[]
 }
 
+/**
+ * isAsync: 启用/禁用 异步编译
+ * modules: 启用/禁用 css modules
+ * modulesOptions: css modules 配置项 (具体配置参考 vite 配置项)
+ */
 export interface SFCAsyncStyleCompileOptions extends SFCStyleCompileOptions {
   isAsync?: boolean
   // css modules support, note this requires async so that we can get the

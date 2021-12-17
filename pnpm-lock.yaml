@@ -11,6 +11,7 @@ importers:
       '@rollup/plugin-node-resolve': ^11.2.1
       '@rollup/plugin-replace': ^2.3.4
       '@types/hash-sum': ^1.0.0
+      '@types/highlight.js': ^10.1.0
       '@types/jest': ^27.0.1
       '@types/node': ^16.4.7
       '@types/puppeteer': ^5.0.0
@@ -26,6 +27,7 @@ importers:
       eslint: ^7.7.0
       execa: ^4.0.2
       fs-extra: ^9.0.1
+      highlight.js: ^11.3.1
       jest: ^27.1.0
       lint-staged: ^10.2.10
       lodash: ^4.17.15
@@ -57,6 +59,7 @@ importers:
       '@rollup/plugin-node-resolve': 11.2.1_rollup@2.38.5
       '@rollup/plugin-replace': 2.4.2_rollup@2.38.5
       '@types/hash-sum': 1.0.0
+      '@types/highlight.js': 10.1.0
       '@types/jest': 27.0.2
       '@types/node': 16.10.3
       '@types/puppeteer': 5.4.4
@@ -72,6 +75,7 @@ importers:
       eslint: 7.32.0
       execa: 4.1.0
       fs-extra: 9.1.0
+      highlight.js: 11.3.1
       jest: 27.2.5
       lint-staged: 10.5.4
       lodash: 4.17.21
@@ -1105,6 +1109,13 @@ packages:
 
   /@types/hash-sum/1.0.0:
     resolution: {integrity: sha512-FdLBT93h3kcZ586Aee66HPCVJ6qvxVjBlDWNmxSGSbCZe9hTsjRKdSsl4y1T+3zfujxo9auykQMnFsfyHWD7wg==}
+    dev: true
+
+  /@types/highlight.js/10.1.0:
+    resolution: {integrity: sha512-77hF2dGBsOgnvZll1vymYiNUtqJ8cJfXPD6GG/2M0aLRc29PkvB7Au6sIDjIEFcSICBhCh2+Pyq6WSRS7LUm6A==}
+    deprecated: This is a stub types definition. highlight.js provides its own type definitions, so you do not need this installed.
+    dependencies:
+      highlight.js: 11.3.1
     dev: true
 
   /@types/istanbul-lib-coverage/2.0.3:
@@ -3397,6 +3408,11 @@ packages:
     dependencies:
       inherits: 2.0.4
       minimalistic-assert: 1.0.1
+    dev: true
+
+  /highlight.js/11.3.1:
+    resolution: {integrity: sha512-PUhCRnPjLtiLHZAQ5A/Dt5F8cWZeMyj9KRsACsWT+OD6OP0x6dp5OmT5jdx0JgEyPxPZZIPQpRN2TciUT7occw==}
+    engines: {node: '>=12.0.0'}
     dev: true
 
   /hmac-drbg/1.0.1:

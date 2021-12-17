@@ -12,7 +12,7 @@ import { defineComponent } from 'vue';
 export default defineComponent({
   name: 'content',
   setup(props, { slots }) {
-    console.log(slots)
+    // console.log(slots)
     return {
 
     }

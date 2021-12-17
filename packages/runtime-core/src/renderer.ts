@@ -1188,17 +1188,17 @@ function baseCreateRenderer(
     // 获取 结束 锚点 旧节点不存在时 自动生成 结束锚点
     const fragmentEndAnchor = (n2.anchor = n1 ? n1.anchor : hostCreateText(''))!
 
-    console.log({
-      n1,
-      n2,
-      container,
-      anchor,
-      parentComponent,
-      parentSuspense,
-      isSVG,
-      slotScopeIds,
-      optimized
-    })
+    // console.log({
+    //   n1,
+    //   n2,
+    //   container,
+    //   anchor,
+    //   parentComponent,
+    //   parentSuspense,
+    //   isSVG,
+    //   slotScopeIds,
+    //   optimized
+    // })
 
     let { patchFlag, dynamicChildren, slotScopeIds: fragmentSlotScopeIds } = n2
 
