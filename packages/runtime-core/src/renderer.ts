@@ -2258,7 +2258,7 @@ function baseCreateRenderer(
       unmountComponent(vnode.component!, parentSuspense, doRemove)
     } else {
       if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
-        // NOT GO 卸载 异步组件
+        // [NOT GO] 卸载 异步组件
         // 如果是异步组件 卸载异步 组件
         vnode.suspense!.unmount(parentSuspense, doRemove)
         return
@@ -2271,7 +2271,7 @@ function baseCreateRenderer(
 
       // 处理 telepopt 组件
       if (shapeFlag & ShapeFlags.TELEPORT) {
-        // NOT GO 卸载 teleport 组件
+        // [NOT GO] 卸载 teleport 组件
         ;(vnode.type as typeof TeleportImpl).remove(
           vnode,
           parentComponent,
@@ -2479,7 +2479,7 @@ function baseCreateRenderer(
     // A component with async dep inside a pending suspense is unmounted before
     // its async dep resolves. This should remove the dep from the suspense, and
     // cause the suspense to resolve immediately if that was the last dep.
-    // NOT GO 载异步组件处理
+    // [NOT GO] 载异步组件处理
     if (
       __FEATURE_SUSPENSE__ &&
       parentSuspense &&
