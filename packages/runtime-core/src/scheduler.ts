@@ -84,7 +84,7 @@ let postFlushIndex = 0
 /**
  * 微任务 创建器
  */
-const resolvedPromise: Promise<any> = Promise.resolve()
+const resolvedPromise = /*#__PURE__*/ Promise.resolve() as Promise<any>
 
 /**
  * 当前任务调度任务
@@ -294,6 +294,8 @@ export function flushPreFlushCbs(
  * 后置任务执行逻辑
  */
 export function flushPostFlushCbs(seen?: CountMap) {
+  // flush any pre cbs queued during the flush (e.g. pre watchers)
+  flushPreFlushCbs()
   if (pendingPostFlushCbs.length) {
     // 去除重复后置任务
     const deduped = [...new Set(pendingPostFlushCbs)]

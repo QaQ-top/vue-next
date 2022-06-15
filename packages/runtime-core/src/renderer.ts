@@ -9,17 +9,15 @@ import {
   createVNode,
   isSameVNodeType,
   Static,
-  VNodeNormalizedRef,
   VNodeHook,
-  VNodeNormalizedRefAtom,
-  VNodeProps
+  VNodeProps,
+  invokeVNodeHook
 } from './vnode'
 import {
   ComponentInternalInstance,
   ComponentOptions,
   createComponentInstance,
   Data,
-  getExposeProxy,
   setupComponent
 } from './component'
 import {
@@ -29,15 +27,12 @@ import {
   updateHOCHostEl
 } from './componentRenderUtils'
 import {
-  isString,
   EMPTY_OBJ,
   EMPTY_ARR,
   isReservedProp,
-  isFunction,
   PatchFlags,
   ShapeFlags,
   NOOP,
-  hasOwn,
   invokeArrayFns,
   isArray,
   getGlobalThis
@@ -50,16 +45,12 @@ import {
   flushPreFlushCbs,
   SchedulerJob
 } from './scheduler'
-import {
-  isRef,
-  pauseTracking,
-  resetTracking,
-  ReactiveEffect
-} from '@vue/reactivity'
+import { pauseTracking, resetTracking, ReactiveEffect } from '@vue/reactivity'
 import { updateProps } from './componentProps'
 import { updateSlots } from './componentSlots'
 import { pushWarningContext, popWarningContext, warn } from './warning'
 import { createAppAPI, CreateAppFunction } from './apiCreateApp'
+import { setRef } from './rendererTemplateRef'
 import {
   SuspenseBoundary,
   queueEffectWithSuspense,
@@ -68,11 +59,6 @@ import {
 import { TeleportImpl, TeleportVNode } from './components/Teleport'
 import { isKeepAlive, KeepAliveContext } from './components/KeepAlive'
 import { registerHMR, unregisterHMR, isHmrUpdating } from './hmr'
-import {
-  ErrorCodes,
-  callWithErrorHandling,
-  callWithAsyncErrorHandling
-} from './errorHandling'
 import { createHydrationFunctions, RootHydrateFunction } from './hydration'
 import { invokeDirectiveHook } from './directives'
 import { startMeasure, endMeasure } from './profiling'
@@ -86,7 +72,6 @@ import { initFeatureFlags } from './featureFlags'
 import { isAsyncWrapper } from './apiAsyncComponent'
 import { isCompatEnabled } from './compat/compatConfig'
 import { DeprecationTypes } from './compat/compatConfig'
-import { registerLegacyRef } from './compat/ref'
 
 export interface Renderer<HostElement = RendererElement> {
   render: RootRenderFunction<HostElement>
@@ -139,7 +124,9 @@ export interface RendererOptions<
     content: string,
     parent: HostElement,
     anchor: HostNode | null,
-    isSVG: boolean
+    isSVG: boolean,
+    start?: HostNode | null,
+    end?: HostNode | null
   ): [HostNode, HostNode]
 }
 
@@ -602,7 +589,9 @@ function baseCreateRenderer(
       n2.children as string,
       container,
       anchor,
-      isSVG
+      isSVG,
+      n2.el,
+      n2.anchor
     )
   }
 
@@ -930,12 +919,15 @@ function baseCreateRenderer(
     const newProps = n2.props || EMPTY_OBJ
     let vnodeHook: VNodeHook | undefined | null
 
+    // disable recurse in beforeUpdate hooks
+    parentComponent && toggleRecurse(parentComponent, false)
     if ((vnodeHook = newProps.onVnodeBeforeUpdate)) {
       invokeVNodeHook(vnodeHook, parentComponent, n2, n1)
     }
     if (dirs) {
       invokeDirectiveHook(n2, n1, parentComponent, 'beforeUpdate')
     }
+    parentComponent && toggleRecurse(parentComponent, true)
 
     if (__DEV__ && isHmrUpdating) {
       // HMR updated, force full diff
@@ -1204,8 +1196,13 @@ function baseCreateRenderer(
 
     // dynamicChildren 存在 表示 自己 或者 自己的子存在 动态变化
     // 后续 将 直接 克隆 vnode
-    if (__DEV__ && isHmrUpdating) {
-      // HMR updated, force full diff
+    // [NOT GO] (patchFlag & PatchFlags.DEV_ROOT_FRAGMENT) 是干什么的
+    if (
+      __DEV__ &&
+      // #5523 dev root fragment may inherit directives
+      (isHmrUpdating || patchFlag & PatchFlags.DEV_ROOT_FRAGMENT)
+    ) {
+      // HMR updated / Dev root fragment (w/ comments), force full diff
       patchFlag = 0
       optimized = false
       dynamicChildren = null
@@ -1432,7 +1429,6 @@ function baseCreateRenderer(
       }
     } else {
       // no update needed. just copy over properties
-      n2.component = n1.component
       n2.el = n1.el
       instance.vnode = n2
     }
@@ -1454,7 +1450,7 @@ function baseCreateRenderer(
         const { bm, m, parent } = instance
         const isAsyncWrapperVNode = isAsyncWrapper(initialVNode)
 
-        effect.allowRecurse = false
+        toggleRecurse(instance, false)
         // beforeMount hook
         if (bm) {
           invokeArrayFns(bm)
@@ -1472,7 +1468,7 @@ function baseCreateRenderer(
         ) {
           instance.emit('hook:beforeMount')
         }
-        effect.allowRecurse = true
+        toggleRecurse(instance, true)
 
         if (el && hydrateNode) {
           // vnode has adopted host node - perform hydration instead of mount.
@@ -1563,7 +1559,12 @@ function baseCreateRenderer(
         // activated hook for keep-alive roots.
         // #1742 activated hook must be accessed after first render
         // since the hook may be injected by a child keep-alive
-        if (initialVNode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
+        if (
+          initialVNode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE ||
+          (parent &&
+            isAsyncWrapper(parent.vnode) &&
+            parent.vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE)
+        ) {
           instance.a && queuePostRenderEffect(instance.a, parentSuspense)
           if (
             __COMPAT__ &&
@@ -1595,8 +1596,7 @@ function baseCreateRenderer(
         }
 
         // Disallow component effect recursion during pre-lifecycle hooks.
-        effect.allowRecurse = false
-
+        toggleRecurse(instance, false)
         if (next) {
           next.el = vnode.el
           updateComponentPreRender(instance, next, optimized)
@@ -1618,8 +1618,7 @@ function baseCreateRenderer(
         ) {
           instance.emit('hook:beforeUpdate')
         }
-
-        effect.allowRecurse = true
+        toggleRecurse(instance, true)
 
         // render
         if (__DEV__) {
@@ -1688,17 +1687,17 @@ function baseCreateRenderer(
     }
 
     // create reactive effect for rendering
-    const effect = new ReactiveEffect(
+    const effect = (instance.effect = new ReactiveEffect(
       componentUpdateFn,
-      () => queueJob(instance.update),
+      () => queueJob(update),
       instance.scope // track it in component's effect scope
-    )
+    ))
 
-    const update = (instance.update = effect.run.bind(effect) as SchedulerJob)
+    const update: SchedulerJob = (instance.update = () => effect.run())
     update.id = instance.uid
     // allowRecurse
     // #1801, #2043 component render effects should allow recursive updates
-    effect.allowRecurse = update.allowRecurse = true
+    toggleRecurse(instance, true)
 
     if (__DEV__) {
       effect.onTrack = instance.rtc
@@ -1707,7 +1706,6 @@ function baseCreateRenderer(
       effect.onTrigger = instance.rtg
         ? e => invokeArrayFns(instance.rtg!, e)
         : void 0
-      // @ts-ignore (for scheduler)
       update.ownerInstance = instance
     }
 
@@ -2335,8 +2333,26 @@ function baseCreateRenderer(
     const { type, el, anchor, transition } = vnode
     // 删除 模板节点
     if (type === Fragment) {
-      // 模板(<template v-if="status">) 100% 有 anchor，processFragment 内 如果没有锚点 会生成 锚点
-      removeFragment(el!, anchor!)
+      // [NOT GO] 新增判断代码
+      if (
+        __DEV__ &&
+        vnode.patchFlag > 0 &&
+        vnode.patchFlag & PatchFlags.DEV_ROOT_FRAGMENT &&
+        transition &&
+        !transition.persisted
+      ) {
+        // [NOT GO] 新增执行代码
+        ;(vnode.children as VNode[]).forEach(child => {
+          if (child.type === Comment) {
+            hostRemove(child.el!)
+          } else {
+            remove(child)
+          }
+        })
+      } else {
+        // 模板(<template v-if="status">) 100% 有 anchor，processFragment 内 如果没有锚点 会生成 锚点
+        removeFragment(el!, anchor!)
+      }
       return
     }
     // 删除 静态节点
@@ -2567,111 +2583,11 @@ function baseCreateRenderer(
   }
 }
 
-export function setRef(
-  rawRef: VNodeNormalizedRef,
-  oldRawRef: VNodeNormalizedRef | null,
-  parentSuspense: SuspenseBoundary | null,
-  vnode: VNode,
-  isUnmount = false
+function toggleRecurse(
+  { effect, update }: ComponentInternalInstance,
+  allowed: boolean
 ) {
-  if (isArray(rawRef)) {
-    rawRef.forEach((r, i) =>
-      setRef(
-        r,
-        oldRawRef && (isArray(oldRawRef) ? oldRawRef[i] : oldRawRef),
-        parentSuspense,
-        vnode,
-        isUnmount
-      )
-    )
-    return
-  }
-
-  if (isAsyncWrapper(vnode) && !isUnmount) {
-    // when mounting async components, nothing needs to be done,
-    // because the template ref is forwarded to inner component
-    return
-  }
-
-  const refValue =
-    vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT
-      ? getExposeProxy(vnode.component!) || vnode.component!.proxy
-      : vnode.el
-  const value = isUnmount ? null : refValue
-
-  const { i: owner, r: ref } = rawRef
-  if (__DEV__ && !owner) {
-    warn(
-      `Missing ref owner context. ref cannot be used on hoisted vnodes. ` +
-        `A vnode with ref must be created inside the render function.`
-    )
-    return
-  }
-  const oldRef = oldRawRef && (oldRawRef as VNodeNormalizedRefAtom).r
-  const refs = owner.refs === EMPTY_OBJ ? (owner.refs = {}) : owner.refs
-  const setupState = owner.setupState
-
-  // dynamic ref changed. unset old ref
-  if (oldRef != null && oldRef !== ref) {
-    if (isString(oldRef)) {
-      refs[oldRef] = null
-      if (hasOwn(setupState, oldRef)) {
-        setupState[oldRef] = null
-      }
-    } else if (isRef(oldRef)) {
-      oldRef.value = null
-    }
-  }
-
-  if (isString(ref)) {
-    const doSet = () => {
-      if (__COMPAT__ && isCompatEnabled(DeprecationTypes.V_FOR_REF, owner)) {
-        registerLegacyRef(refs, ref, refValue, owner, rawRef.f, isUnmount)
-      } else {
-        refs[ref] = value
-      }
-      if (hasOwn(setupState, ref)) {
-        setupState[ref] = value
-      }
-    }
-    // #1789: for non-null values, set them after render
-    // null values means this is unmount and it should not overwrite another
-    // ref with the same key
-    if (value) {
-      ;(doSet as SchedulerJob).id = -1
-      queuePostRenderEffect(doSet, parentSuspense)
-    } else {
-      doSet()
-    }
-  } else if (isRef(ref)) {
-    const doSet = () => {
-      ref.value = value
-    }
-    if (value) {
-      ;(doSet as SchedulerJob).id = -1
-      queuePostRenderEffect(doSet, parentSuspense)
-    } else {
-      doSet()
-    }
-  } else if (isFunction(ref)) {
-    callWithErrorHandling(ref, owner, ErrorCodes.FUNCTION_REF, [value, refs])
-  } else if (__DEV__) {
-    warn('Invalid template ref type:', value, `(${typeof value})`)
-  }
-}
-/**
- * 调用 vnode 钩子 并且进行错误捕获
- */
-export function invokeVNodeHook(
-  hook: VNodeHook,
-  instance: ComponentInternalInstance | null,
-  vnode: VNode,
-  prevVNode: VNode | null = null
-) {
-  callWithAsyncErrorHandling(hook, instance, ErrorCodes.VNODE_HOOK, [
-    vnode,
-    prevVNode
-  ])
+  effect.allowRecurse = update.allowRecurse = allowed
 }
 
 /**

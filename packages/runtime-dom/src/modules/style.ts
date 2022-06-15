@@ -63,6 +63,7 @@ function setStyle(
     // 其实这里 最终 设置的值 是 数组 最后一个
     val.forEach(v => setStyle(style, name, v))
   } else {
+    if (val == null) val = ''
     if (name.startsWith('--')) {
       // custom property definition
       // 如果属性是以 -- 开头 设置 自定义属性

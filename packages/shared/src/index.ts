@@ -12,6 +12,7 @@ export * from './domAttrConfig'
 export * from './escapeHtml'
 export * from './looseEqual'
 export * from './toDisplayString'
+export * from './typeUtils'
 
 export const EMPTY_OBJ: { readonly [key: string]: any } = __DEV__
   ? Object.freeze({})
@@ -80,7 +81,7 @@ export const isSet = (val: unknown): val is Set<any> =>
 /**
  * 是否是 Date(时间对象)
  */
-export const isDate = (val: unknown): val is Date => val instanceof Date
+export const isDate = (val: unknown): val is Date => toTypeString(val) === '[object Date]'
 /**
  * 是否是函数
  */
@@ -130,12 +131,15 @@ export const isIntegerKey = (key: unknown) =>
  */
 export const isReservedProp = /*#__PURE__*/ makeMap(
   // the leading comma is intentional so empty string "" is also included
-  ',key,ref,' +
+  ',key,ref,ref_for,ref_key,' +
     'onVnodeBeforeMount,onVnodeMounted,' +
     'onVnodeBeforeUpdate,onVnodeUpdated,' +
     'onVnodeBeforeUnmount,onVnodeUnmounted'
 )
 
+export const isBuiltInDirective = /*#__PURE__*/ makeMap(
+  'bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo'
+)
 /**
  * @introduction 接收一个函数 返回一个 函数
  * @introduction 创建一个 cache 闭包变量
@@ -229,4 +233,12 @@ export const getGlobalThis = (): any => {
         ? global
         : {})
   )
+}
+
+const identRE = /^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$/
+
+export function genPropsAccessExp(name: string) {
+  return identRE.test(name)
+    ? `__props.${name}`
+    : `__props[${JSON.stringify(name)}]`
 }

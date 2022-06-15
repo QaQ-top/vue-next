@@ -38,7 +38,7 @@ declare module '@vue/reactivity' {
  * @info nodeOps 初始化、更新 dom
  * @info forcePatchProp 判断传入的值 是否 为 "value"
  */
-const rendererOptions = extend({ patchProp }, nodeOps)
+const rendererOptions = /*#__PURE__*/ extend({ patchProp }, nodeOps)
 
 // lazy create the renderer - this makes core renderer logic tree-shakable
 // in case the user only imports reactivity utilities from Vue.

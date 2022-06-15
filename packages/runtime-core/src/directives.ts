@@ -12,9 +12,9 @@ return withDirectives(h(comp), [
 */
 
 import { VNode } from './vnode'
-import { isFunction, EMPTY_OBJ, makeMap } from '@vue/shared'
+import { isFunction, EMPTY_OBJ, isBuiltInDirective } from '@vue/shared'
 import { warn } from './warning'
-import { ComponentInternalInstance, Data } from './component'
+import { ComponentInternalInstance, Data, getExposeProxy } from './component'
 import { currentRenderingInstance } from './componentRenderContext'
 import { callWithAsyncErrorHandling, ErrorCodes } from './errorHandling'
 import { ComponentPublicInstance } from './componentPublicInstance'
@@ -63,10 +63,6 @@ export type Directive<T = any, V = any> =
 
 export type DirectiveModifiers = Record<string, boolean>
 
-const isBuiltInDirective = /*#__PURE__*/ makeMap(
-  'bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo'
-)
-
 /**
  * @description 验证 自定义 指令名称 是否 是保留名称
  * @param {string} name 指令名称
@@ -97,7 +93,9 @@ export function withDirectives<T extends VNode>(
     __DEV__ && warn(`withDirectives can only be used inside render functions.`)
     return vnode
   }
-  const instance = internalInstance.proxy
+  const instance =
+    (getExposeProxy(internalInstance) as ComponentPublicInstance) ||
+    internalInstance.proxy
   const bindings: DirectiveBinding[] = vnode.dirs || (vnode.dirs = [])
   for (let i = 0; i < directives.length; i++) {
     let [dir, value, arg, modifiers = EMPTY_OBJ] = directives[i]

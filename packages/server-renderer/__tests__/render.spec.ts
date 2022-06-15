@@ -676,7 +676,7 @@ function testRender(type: string, render: typeof renderToString) {
           render: () => h('p', 'hello')
         }
         expect(await render(h(KeepAlive, () => h(MyComp)))).toBe(
-          `<!--[--><p>hello</p><!--]-->`
+          `<p>hello</p>`
         )
       })
 
@@ -838,7 +838,7 @@ function testRender(type: string, render: typeof renderToString) {
       expect(fn2).toBeCalledWith('async child error')
     })
 
-    // https://github.com/vuejs/vue-next/issues/3322
+    // https://github.com/vuejs/core/issues/3322
     test('effect onInvalidate does not error', async () => {
       const noop = () => {}
       const app = createApp({

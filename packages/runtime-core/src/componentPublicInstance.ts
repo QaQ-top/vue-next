@@ -13,7 +13,8 @@ import {
   NOOP,
   extend,
   isString,
-  isFunction
+  isFunction,
+  UnionToIntersection
 } from '@vue/shared'
 import {
   toRaw,
@@ -40,7 +41,6 @@ import { Slots } from './componentSlots'
 import { markAttrsAccessed } from './componentRenderUtils'
 import { currentRenderingInstance } from './componentRenderContext'
 import { warn } from './warning'
-import { UnionToIntersection } from './helpers/typeUtils'
 import { installCompatInstanceProperties } from './compat/instance'
 
 /**
@@ -239,9 +239,10 @@ const getPublicInstance = (
    * $nextTick: 返回 nextTick 并且把 代理实例 传入
    * $watch: 返回 instanceWatch 并且绑定当前实例为 this
    */
-export const publicPropertiesMap: PublicPropertiesMap = /*#__PURE__*/ extend(
-  Object.create(null),
-  {
+export const publicPropertiesMap: PublicPropertiesMap =
+  // Move PURE marker to new line to workaround compiler discarding it
+  // due to type annotation
+  /*#__PURE__*/ extend(Object.create(null), {
     $: i => i,
     $el: i => i.vnode.el,
     $data: i => i.data,
@@ -253,11 +254,10 @@ export const publicPropertiesMap: PublicPropertiesMap = /*#__PURE__*/ extend(
     $root: i => getPublicInstance(i.root),
     $emit: i => i.emit,
     $options: i => (__FEATURE_OPTIONS_API__ ? resolveMergedOptions(i) : i.type),
-    $forceUpdate: i => () => queueJob(i.update),
-    $nextTick: i => nextTick.bind(i.proxy!),
+    $forceUpdate: i => i.f || (i.f = () => queueJob(i.update)),
+    $nextTick: i => i.n || (i.n = nextTick.bind(i.proxy!)),
     $watch: i => (__FEATURE_OPTIONS_API__ ? instanceWatch.bind(i) : NOOP)
-  } as PublicPropertiesMap
-)
+  } as PublicPropertiesMap)
 
 if (__COMPAT__) {
   installCompatInstanceProperties(publicPropertiesMap)
@@ -291,6 +291,8 @@ export interface ComponentRenderContext {
   _: ComponentInternalInstance
 }
 
+
+export const isReservedPrefix = (key: string) => key === '_' || key === '$'
 /**
  * @description 实例代理处理
  */
@@ -411,7 +413,9 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
           return desc.get.call(instance.proxy)
         } else {
           const val = globalProperties[key]
-          return isFunction(val) ? val.bind(instance.proxy) : val
+          return isFunction(val)
+            ? Object.assign(val.bind(instance.proxy), val)
+            : val
         }
       } else {
         return globalProperties[key]
@@ -425,11 +429,7 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
         key.indexOf('__v') !== 0)
     ) {
       // 开发获取下 提示 没有该属性的错误
-      if (
-        data !== EMPTY_OBJ &&
-        (key[0] === '$' || key[0] === '_') &&
-        hasOwn(data, key)
-      ) {
+      if (data !== EMPTY_OBJ && isReservedPrefix(key[0]) && hasOwn(data, key)) {
         warn(
           `Property ${JSON.stringify(
             key
@@ -454,8 +454,10 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
     const { data, setupState, ctx } = instance
     if (setupState !== EMPTY_OBJ && hasOwn(setupState, key)) {
       setupState[key] = value
+      return true
     } else if (data !== EMPTY_OBJ && hasOwn(data, key)) {
       data[key] = value
+      return true
     } else if (hasOwn(instance.props, key)) {
       __DEV__ &&
         warn(
@@ -502,6 +504,20 @@ export const PublicInstanceProxyHandlers: ProxyHandler<any> = {
       hasOwn(publicPropertiesMap, key) ||
       hasOwn(appContext.config.globalProperties, key)
     )
+  },
+
+  defineProperty(
+    target: ComponentRenderContext,
+    key: string,
+    descriptor: PropertyDescriptor
+  ) {
+    if (descriptor.get != null) {
+      // invalidate key cache of a getter based property #5417
+      target._.accessCache![key] = 0
+    } else if (hasOwn(descriptor, 'value')) {
+      this.set!(target, key, descriptor.value, null)
+    }
+    return Reflect.defineProperty(target, key, descriptor)
   }
 }
 
@@ -596,7 +612,7 @@ export function exposeSetupStateOnRenderContext(
   const { ctx, setupState } = instance
   Object.keys(toRaw(setupState)).forEach(key => {
     if (!setupState.__isScriptSetup) {
-      if (key[0] === '$' || key[0] === '_') {
+      if (isReservedPrefix(key[0])) {
         warn(
           `setup() return property ${JSON.stringify(
             key

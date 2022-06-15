@@ -8,7 +8,8 @@ import {
   isArray,
   isFunction,
   isOn,
-  toNumber
+  toNumber,
+  UnionToIntersection
 } from '@vue/shared'
 import {
   ComponentInternalInstance,
@@ -18,7 +19,6 @@ import {
 } from './component'
 import { callWithAsyncErrorHandling, ErrorCodes } from './errorHandling'
 import { warn } from './warning'
-import { UnionToIntersection } from './helpers/typeUtils'
 import { devtoolsComponentEmit } from './devtools'
 import { AppContext } from './apiCreateApp'
 import { emit as compatInstanceEmit } from './compat/instanceEventEmitter'
@@ -81,6 +81,8 @@ export function emit(
   event: string,
   ...rawArgs: any[]
 ) {
+  // 如果组件已被销毁 则直接结束 emit 执行
+  if (instance.isUnmounted) return
   /**
    * 获取当前 组件 的 vnode (vnode 上有 绑定的 父组件自定义的事件)
    */
@@ -145,9 +147,9 @@ export function emit(
     if (trim) {
       // 将 emit 参数 全部掉首尾空格
       args = rawArgs.map(a => a.trim())
-
-      // number = true
-    } else if (number) {
+    }
+    // number = true
+    if (number) {
       // 将 emit 参数 全部转 number 类型
       args = rawArgs.map(toNumber)
     }

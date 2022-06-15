@@ -13,43 +13,44 @@ interface Invoker extends EventListener {
 type EventValue = Function | Function[]
 
 // Async edge case fix requires storing an event listener's attach timestamp.
-/**
- * 获取时间戳
- * 存储事件监听器的附加时间戳
- */
-let _getNow: () => number = Date.now
-
-/**
- * 是否跳过时间戳检查
- */
-let skipTimestampCheck = false
-
-/**
- * 这里判断 是使用高精度 时间戳(performance.now() 微秒级) 还是 Date.now (毫秒级别)
- */
-if (typeof window !== 'undefined') {
-  // Determine what event timestamp the browser is using. Annoyingly, the
-  // timestamp can either be hi-res (relative to page load) or low-res
-  // (relative to UNIX epoch), so in order to compare time we have to use the
-  // same timestamp type when saving the flush timestamp.
-  if (_getNow() > document.createEvent('Event').timeStamp) {
-    // if the low-res timestamp which is bigger than the event timestamp
-    // (which is evaluated AFTER) it means the event is using a hi-res timestamp,
-    // and we need to use the hi-res version for event listeners as well.
-    _getNow = () => performance.now()
+const [_getNow, skipTimestampCheck] = /*#__PURE__*/ (() => {
+  /**
+   * 获取时间戳
+   * 存储事件监听器的附加时间戳
+   */
+  let _getNow = Date.now
+  /**
+   * 是否跳过时间戳检查
+   */
+  let skipTimestampCheck = false
+  /**
+   * 这里判断 是使用高精度 时间戳(performance.now() 微秒级) 还是 Date.now (毫秒级别)
+   */
+  if (typeof window !== 'undefined') {
+    // Determine what event timestamp the browser is using. Annoyingly, the
+    // timestamp can either be hi-res (relative to page load) or low-res
+    // (relative to UNIX epoch), so in order to compare time we have to use the
+    // same timestamp type when saving the flush timestamp.
+    if (Date.now() > document.createEvent('Event').timeStamp) {
+      // if the low-res timestamp which is bigger than the event timestamp
+      // (which is evaluated AFTER) it means the event is using a hi-res timestamp,
+      // and we need to use the hi-res version for event listeners as well.
+      _getNow = performance.now.bind(performance)
+    }
+    // #3485: Firefox <= 53 has incorrect Event.timeStamp implementation
+    // and does not fire microtasks in between event propagation, so safe to exclude.
+    // 获取浏览器 版本 版本号
+    const ffMatch = navigator.userAgent.match(/firefox\/(\d+)/i)
+    // 火狐版本小于 53 跳过 时间戳检测
+    skipTimestampCheck = !!(ffMatch && Number(ffMatch[1]) <= 53)
   }
-  // #3485: Firefox <= 53 has incorrect Event.timeStamp implementation
-  // and does not fire microtasks in between event propagation, so safe to exclude.
-  // 获取浏览器 版本 版本号
-  const ffMatch = navigator.userAgent.match(/firefox\/(\d+)/i)
-  // 火狐版本小于 53 跳过 时间戳检测
-  skipTimestampCheck = !!(ffMatch && Number(ffMatch[1]) <= 53)
-}
+  return [_getNow, skipTimestampCheck]
+})()
 
 // To avoid the overhead of repeatedly calling performance.now(), we cache
 // and use the same timestamp for all event listeners attached in the same tick.
 let cachedNow: number = 0
-const p = Promise.resolve()
+const p = /*#__PURE__*/ Promise.resolve()
 
 /**
  * 清空时间戳
@@ -159,7 +160,6 @@ function parseName(name: string): [string, EventListenerOptions | undefined] {
     while ((m = name.match(optionsModifierRE))) {
       name = name.slice(0, name.length - m[0].length)
       ;(options as any)[m[0].toLowerCase()] = true
-      options
     }
   }
   // 解析出 on 后面跟的事件
@@ -223,7 +223,7 @@ function patchStopImmediatePropagation(
     // 返回 处理后的 事件函数
     // 如果数组前的某个事件函数 触发了 e.stopImmediatePropagation()
     // e._stopped 将为真，_stopped为真 数组后续的事件函数 将 不会调用 绑定的函数
-    return value.map(fn => (e: Event) => !(e as any)._stopped && fn(e))
+    return value.map(fn => (e: Event) => !(e as any)._stopped && fn && fn(e))
   } else {
     // 返回
     return value

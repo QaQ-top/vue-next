@@ -7,7 +7,8 @@ import {
   EffectScope,
   markRaw,
   track,
-  TrackOpTypes
+  TrackOpTypes,
+  ReactiveEffect
 } from '@vue/reactivity'
 import {
   ComponentPublicInstance,
@@ -105,6 +106,10 @@ export interface ComponentInternalOptions {
    * This one should be exposed so that devtools can make use of it
    */
   __file?: string
+  /**
+   * name inferred from filename
+   */
+  __name?: string
 }
 
 export interface FunctionalComponent<P = {}, E extends EmitsOptions = {}>
@@ -285,8 +290,13 @@ export interface ComponentInternalInstance {
    */
   subTree: VNode
   /**
+  /**
    * The reactive effect for rendering and patching the component. Callable.
    * @info 会引起更新和渲染的响应式的副作用
+   * Render effect instance
+   */
+  effect: ReactiveEffect
+  /**
    * Bound effect runner to be passed to schedulers
    */
   update: SchedulerJob
@@ -532,6 +542,15 @@ export interface ComponentInternalInstance {
    * @internal ssr钩子
    */
   [LifecycleHooks.SERVER_PREFETCH]: LifecycleHook<() => Promise<unknown>>
+
+  /**
+   * For caching bound $forceUpdate on public proxy access
+   */
+  f?: () => void
+  /**
+   * For caching bound $nextTick on public proxy access
+   */
+  n?: () => Promise<void>
 }
 
 const emptyAppContext = createAppContext()
@@ -572,6 +591,7 @@ export function createComponentInstance(
     root: null!, // to be immediately set
     next: null,
     subTree: null!, // will be set synchronously right after creation
+    effect: null!,
     update: null!, // will be set synchronously right after creation
     scope: new EffectScope(true /* detached */),
     render: null,
@@ -584,7 +604,7 @@ export function createComponentInstance(
     accessCache: null!,
     renderCache: [],
 
-    // local resovled assets
+    // local resolved assets
     components: null,
     directives: null,
 
@@ -830,7 +850,6 @@ function setupStatefulComponent(
     // 判断结果 是否是 异步的 setup
     if (isPromise(setupResult)) {
       setupResult.then(unsetCurrentInstance, unsetCurrentInstance)
-
       if (isSSR) {
         // 如果是 ssr
         // return the promise so server-renderer can wait on it
@@ -846,6 +865,15 @@ function setupStatefulComponent(
         // 否则就是 异步组件
         // 设置异步依赖
         instance.asyncDep = setupResult
+        if (__DEV__ && !instance.suspense) {
+          const name = Component.name ?? 'Anonymous'
+          warn(
+            `Component <${name}>: setup function returned a promise, but no ` +
+              `<Suspense> boundary was found in the parent component tree. ` +
+              `A component with async setup() must be nested in a <Suspense> ` +
+              `in order to be rendered.`
+          )
+        }
       } else if (__DEV__) {
         warn(
           `setup() returned a Promise, but the version of Vue you are using ` +
@@ -977,7 +1005,8 @@ export function finishComponentSetup(
   // could be already set when returned from setup()
   // 如果没有 组件实例上没有 render
   if (!instance.render) {
-    // could be set from setup()
+    // only do on-the-fly compile if not in SSR - SSR on-the-fly compilation
+    // is done by server-renderer
     // 如果 compile (模板编译器) 存在 并且开发人员没有配置 render 项 且不是 ssr
     if (!isSSR && compile && !Component.render) {
       const template =
@@ -1148,11 +1177,12 @@ const classify = (str: string): string =>
   str.replace(classifyRE, c => c.toUpperCase()).replace(/[-_]/g, '')
 
 export function getComponentName(
-  Component: ConcreteComponent
-): string | undefined {
+  Component: ConcreteComponent,
+  includeInferred = true
+): string | false | undefined {
   return isFunction(Component)
     ? Component.displayName || Component.name
-    : Component.name
+    : Component.name || (includeInferred && Component.__name)
 }
 
 /* istanbul ignore next */
