@@ -27,7 +27,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
-import * as compiler from 'vue/compiler-sfc';
+import { parse as parseCompiler } from '@vue/compiler-sfc';
 import source from './index.vue?raw';
 import { MyVitePluginVue } from '@utils/vite/vitePlugin';
 import { rawOptions, transformMain } from '@utils/vite/plugin-vue';
@@ -55,21 +55,21 @@ let options: MyVitePluginVue.ResolvedOptions = {
     exclude: [],
     sourceMap: true
   };
-const parse = compiler.parse(source, {
+const parse = parseCompiler(source, {
       ...options
-    })
-    parse.descriptor.id = hash(SLFE_URL.href + (options.isProduction ? source : ''))
-    const templateResult = templateCompile(parse.descriptor, options, false);
-    const styleResult = transformStyle(parse.descriptor, 0, options);
-    styleResult.then((res) => {
+})
+parse.descriptor.id = hash(SLFE_URL.href + (options.isProduction ? source : ''))
+const templateResult = templateCompile(parse.descriptor, options, false);
+const styleResult = transformStyle(parse.descriptor, 0, options);
+styleResult.then((res) => {
       // console.log(parse.descriptor.id, res, VITE_ROOT)
-    })
-    const mainRef = ref('');
-    const main = transformMain(source, SLFE_URL.pathname, options, false);
-    main.then(res => {
-      mainRef.value = res?.code!
-    })
-    console.log(templateResult)
+})
+const mainRef = ref('');
+const main = transformMain(source, SLFE_URL.pathname, options, false);
+main.then(res => {
+  mainRef.value = res?.code!
+})
+console.log(templateResult)
 </script>
 
 <style lang="scss" scoped>

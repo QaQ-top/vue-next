@@ -8,6 +8,11 @@ declare module '*.vue' {
   export default component
 }
 
+declare module 'vue/dist/vue.esm-bundler.js' {
+  import * as Vue from 'vue';
+  export default Vue;
+}
+
 declare const GLOBAL_ENV: string;
 declare const VITE_ROOT: string;
 

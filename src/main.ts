@@ -13,10 +13,7 @@ import 'highlight.js/styles/atom-one-dark.css';
 
 
 /**
- * [NOT GO] 不太理解 这个 nextTick 应该是第一个 then 的 挂载
- * 然后再去调用vue vue内部调度任务 应该 在这个 nextTick 才对 后面 then
- * 都是执行时 确是 调度先执行 再执行 nextTick
- * 这个没看明白
+ * 这个 nextTick 应该是第一个 then 的 挂载
  *
  */
 nextTick(() => {

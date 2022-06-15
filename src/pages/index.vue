@@ -17,11 +17,12 @@
     <TeleportCmponent />
     <Vmodel v-model="propsModel" />
     <Sfc />
+    <Template />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref} from "vue";
 import StyleAndClass from '@components/style-and-class/index.vue';
 import PropsAndEmits from '@components/props-and-emits/index.vue';
 import RefCmponent from '@components/ref/index.vue';
@@ -30,6 +31,7 @@ import TeleportCmponent from '@components/teleport/index.vue';
 import Vnode from '@components/vnode/index.vue';
 import Vmodel from '@components/directive/vmodel.vue';
 import Sfc from '@components/sfc/index.vue';
+import Template from '@components/template/index.vue';
 
 export default defineComponent({
   name: "App",
@@ -38,7 +40,7 @@ export default defineComponent({
       propsModel: ref(0),
       log(...data: number[]) {
         // console.log('PropsAndEmits: onFoo', data)
-      }
+      },
     }
   },
   components: {
@@ -49,7 +51,8 @@ export default defineComponent({
     TeleportCmponent,
     Vnode,
     Vmodel,
-    Sfc
+    Sfc,
+    Template
   }
 })
 </script>

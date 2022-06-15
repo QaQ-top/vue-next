@@ -17,6 +17,10 @@ importers:
       '@types/node': ^16.4.7
       '@types/puppeteer': ^5.0.0
       '@typescript-eslint/parser': ^5.23.0
+      '@vue/compiler-core': workspace:*
+      '@vue/compiler-dom': workspace:*
+      '@vue/compiler-sfc': workspace:*
+      '@vue/compiler-ssr': workspace:*
       '@vue/reactivity': workspace:*
       '@vue/runtime-core': workspace:*
       '@vue/runtime-dom': workspace:*
@@ -47,6 +51,7 @@ importers:
       rollup-plugin-typescript2: ^0.27.2
       semver: ^7.3.2
       serve: ^12.0.0
+      source-map: ^0.6.1
       todomvc-app-css: ^2.3.0
       ts-jest: ^27.0.5
       tslib: ^2.4.0
@@ -63,10 +68,15 @@ importers:
       '@rollup/plugin-node-resolve': 11.2.1_rollup@2.38.5
       '@rollup/plugin-replace': 2.4.2_rollup@2.38.5
       '@types/hash-sum': 1.0.0
+      '@types/highlight.js': 10.1.0
       '@types/jest': 27.0.3
       '@types/node': 16.11.12
       '@types/puppeteer': 5.4.4
       '@typescript-eslint/parser': 5.23.0_e4zyhrvfnqudwdx5bevnvkluy4
+      '@vue/compiler-core': link:packages/compiler-core
+      '@vue/compiler-dom': link:packages/compiler-dom
+      '@vue/compiler-sfc': link:packages/compiler-sfc
+      '@vue/compiler-ssr': link:packages/compiler-ssr
       '@vue/reactivity': link:packages/reactivity
       '@vue/runtime-core': link:packages/runtime-core
       '@vue/runtime-dom': link:packages/runtime-dom
@@ -80,6 +90,7 @@ importers:
       eslint-plugin-jest: 26.1.5_kkaclaimgki2r45yqzc3bxhmwy
       execa: 4.1.0
       fs-extra: 9.1.0
+      highlight.js: 11.3.1
       jest: 27.4.4
       lint-staged: 10.5.4
       lodash: 4.17.21
@@ -96,6 +107,7 @@ importers:
       rollup-plugin-typescript2: 0.27.3_zlmz7jga2mttuvx4qwelsmvyxm
       semver: 7.3.5
       serve: 12.0.1
+      source-map: 0.6.1
       todomvc-app-css: 2.4.1
       ts-jest: 27.1.1_fl6hqye43ip7rnu7q76f35ejrm
       tslib: 2.4.0
@@ -1363,7 +1375,7 @@ packages:
     peerDependencies:
       vue: ^3.2.13
     dependencies:
-      vue: link:packages/vue
+      vue: link:packages\vue
     dev: false
 
   /@zeit/schemas/2.6.0:
@@ -5144,7 +5156,6 @@ packages:
     resolution: {integrity: sha512-zJpuPDwOv8D2zq2WRoMe1HsfZthVewpel9CAvTfc/2mBD1uUT/agc5f7GHGWXlYkFvi1mVxe4IjvP2HNrop7nQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
-    dev: false
 
   /nanoid/3.3.4:
     resolution: {integrity: sha512-MqBkQh/OHTS2egovRtLk45wEyNXwF+cokD+1YPf9u5VfJiRdAiRwB2froX5Co9Rh20xs4siNPm8naNotSD6RBw==}
@@ -5612,7 +5623,6 @@ packages:
       nanoid: 3.1.30
       picocolors: 1.0.0
       source-map-js: 1.0.1
-    dev: false
 
   /prelude-ls/1.1.2:
     resolution: {integrity: sha1-IZMqVJ9eUv/ZqCf1cOBL5iqX2lQ=}
@@ -6379,8 +6389,8 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  /source-map/0.7.3:
-    resolution: {integrity: sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==}
+  /source-map/0.7.4:
+    resolution: {integrity: sha512-l3BikUxvPOcn5E74dZiq5BGsTb5yEwhaTSzccU6t4sDOH8NWJCstKO5QT2CvtFoK6F0saL7p9xHAqHOlCPJygA==}
     engines: {node: '>= 8'}
     dev: true
 
@@ -6680,7 +6690,7 @@ packages:
     dependencies:
       acorn: 8.6.0
       commander: 2.20.3
-      source-map: 0.7.3
+      source-map: 0.7.4
       source-map-support: 0.5.21
     dev: true
 
@@ -6968,7 +6978,7 @@ packages:
     dependencies:
       '@types/istanbul-lib-coverage': 2.0.3
       convert-source-map: 1.8.0
-      source-map: 0.7.3
+      source-map: 0.7.4
     dev: true
 
   /validate-npm-package-license/3.0.4:

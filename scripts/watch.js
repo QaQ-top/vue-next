@@ -52,7 +52,8 @@ function runBuild(paths) {
           chalk.blue.bold(`\r\n${target}/src 源代码已经更新`, '打包进行中...')
         )
         const start = Date.now()
-        execa('yarn', paths.slice(0, 1))
+        // 注意我这里使用的是 pnpm，你可以更改成你想要的命令行工具打包
+        execa('pnpm run', paths.slice(0, 1))
           .then(src => {
             console.log(
               chalk.green.bold(

@@ -3,6 +3,7 @@
   "version": "3.2.37",
   "description": "@vue/compiler-ssr",
   "main": "dist/compiler-ssr.cjs.js",
+  "module": "dist/compiler-ssr.esm-browser.js",
   "types": "dist/compiler-ssr.d.ts",
   "files": [
     "dist"
